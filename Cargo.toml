@@ -1,0 +1,13 @@
+[package]
+name = "lib_net"
+version = "0.1.0"
+authors = ["jymk"]
+edition = "2021"
+
+[lib]
+name = "lib_net"
+path = "lib.rs"
+
+[dependencies]
+bytes = "1.1.0"
+sha1 = "0.10.1"
