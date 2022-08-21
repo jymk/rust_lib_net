@@ -27,16 +27,3 @@ pub(super) struct _Frame {
     pub(super) _mask_key: [u8; 4],
     pub(super) _data: BytesMut,
 }
-
-#[derive(Debug, Clone, Copy)]
-pub enum ExtendPayloadLen {
-    Zero,
-    U16(u16),
-    U64(u64),
-}
-
-impl Default for ExtendPayloadLen {
-    fn default() -> Self {
-        Self::Zero
-    }
-}

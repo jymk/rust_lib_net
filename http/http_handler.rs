@@ -6,7 +6,6 @@ use std::{
 };
 
 use crate::{
-    btreemap,
     common::strings,
     http::{header, Header},
     HeaderType,
@@ -60,7 +59,7 @@ pub(crate) fn get_with_header(
     req.push(' ');
     req.push_str("HTTP/2");
     req.push_str("\r\n");
-    let tmp = Header::new(&mut btreemap!());
+    let tmp = Header::new(&mut BTreeMap::default());
     for (k, v) in tmp.headers() {
         req.push_str(&k);
         req.push_str(":");
@@ -104,7 +103,7 @@ pub(crate) fn post(host: &str, url: &str, body: &str) -> String {
     req.push(' ');
     req.push_str("HTTP/1.1");
     req.push_str("\r\n");
-    let header = Header::new(&mut btreemap!());
+    let header = Header::new(&mut BTreeMap::default());
     for (k, v) in header.headers() {
         req.push_str(&k);
         req.push_str(":");

@@ -1,4 +1,4 @@
-use crate::{btreemap, common::LoopStatus, Header};
+use crate::{common::LoopStatus, Header};
 
 use super::{errs, req::HttpMethod};
 // use serde_json::Value;
@@ -107,7 +107,7 @@ impl Body {
         let ct = header.get_content_type();
         // println!("ct={:?}", ct);
         if ct.is_none() {
-            return btreemap!();
+            return BTreeMap::default();
         }
         let content_type = ct.unwrap();
         match content_type.as_str() {
@@ -118,7 +118,7 @@ impl Body {
             ),
             // application/javascript、text/plain、text/html、application/xml
             // application/json需json解析，也不处理
-            _ => btreemap!(),
+            _ => BTreeMap::default(),
         }
     }
 
@@ -129,7 +129,7 @@ impl Body {
     /// 若为二进制文件不能转为string
     /// form-data 非文件非chunked
     pub(crate) fn analyze_form(&self, header: &Header) -> BTreeMap<String, String> {
-        let mut params = btreemap!();
+        let mut params = BTreeMap::default();
         let boundary = header.get_boundary();
         // println!("boundary={:?}", boundary);
         if boundary.is_none() {

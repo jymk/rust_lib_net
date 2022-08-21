@@ -1,11 +1,10 @@
 use std::{
+    collections::BTreeMap,
     io::{BufReader, BufWriter, Write},
     net::TcpStream,
 };
 
-use crate::{
-    btreemap, common::LoopStatus, http::http_handler, HttpRequest, HttpResponse, StatusCode,
-};
+use crate::{common::LoopStatus, http::http_handler, HttpRequest, HttpResponse, StatusCode};
 
 use super::{
     header::{self, HeaderType},
@@ -169,13 +168,13 @@ pub(crate) fn write_msg(stream: &TcpStream, msg: &[u8]) {
             0
         }
     };
-    println!("_wsize={}", _wsize);
+    // println!("_wsize={}", _wsize);
     bw.flush().unwrap();
 }
 
 //处理回包
 pub(crate) fn back<T: std::fmt::Debug>(stream: &TcpStream, status_code: StatusCode, text: T) {
-    back_with_header(stream, status_code, text, &mut btreemap!())
+    back_with_header(stream, status_code, text, &mut BTreeMap::default())
 }
 
 fn _none_before(_req: &HttpRequest, _rsp: &mut HttpResponse) -> bool {
