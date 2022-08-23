@@ -10,6 +10,7 @@ pub(crate) fn server(addr: &str) {
     let listener = TcpListener::bind(addr).expect("bind failed");
     println!("bind success.");
     // let mut buf = String::new();
+    use super::http::rw;
     for stream in listener.incoming() {
         println!("connect success...");
         // buf.clear();
@@ -19,7 +20,6 @@ pub(crate) fn server(addr: &str) {
                 println!("cost: {:?}", SystemTime::now().duration_since(begin));
                 let mut buf = Vec::new();
                 loop {
-                    use crate::http::rw;
                     match rw::read_from_net(&ts, &mut buf) {
                         LoopStatus::Break => {
                             if let Ok(len) = ts.write(b"program exit") {

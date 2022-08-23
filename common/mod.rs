@@ -1,4 +1,4 @@
-#![allow(unused)]
+// #![allow(unused)]
 pub mod base64;
 pub mod errs;
 mod status;

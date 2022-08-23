@@ -1,6 +1,6 @@
-use crate::{common::LoopStatus, Header};
+use crate::common::LoopStatus;
 
-use super::{errs, req::HttpMethod};
+use super::{errs, header::Header, req::HttpMethod};
 // use serde_json::Value;
 use std::{
     collections::BTreeMap,

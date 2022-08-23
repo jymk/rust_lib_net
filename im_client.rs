@@ -7,8 +7,8 @@ use std::{
     time::SystemTime,
 };
 
+use super::http::rw::{self, write_from_cmd};
 use crate::common::LoopStatus;
-use crate::http::rw::write_from_cmd;
 
 pub(crate) fn client(addr: &str) -> bool {
     let begin = SystemTime::now();
@@ -23,7 +23,6 @@ pub(crate) fn client(addr: &str) -> bool {
     loop {
         write_from_cmd(&stream, &mut wbuf);
         let mut rbuf = Vec::<u8>::new();
-        use crate::http::rw;
         match rw::read_from_net(&stream, &mut rbuf) {
             LoopStatus::Break => {
                 break;

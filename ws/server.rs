@@ -1,15 +1,15 @@
 use std::{
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufReader, Read},
     net::TcpStream,
     time::Duration,
 };
 
-use bytes::{BufMut, BytesMut};
+use bytes::BytesMut;
 use sha1::{Digest, Sha1};
 
 use super::frame::_Frame;
+use crate::common::LoopStatus;
 use crate::http::{req::*, rsp::*};
-use crate::LoopStatus;
 use crate::{
     common::time as common_time,
     http::server::{back_with_header, write_msg},
@@ -142,7 +142,10 @@ impl<'a> WSServer<'a> {
             let mut hasher = Sha1::new();
             hasher.update(key.to_string() + super::MAGIC);
             let res = hasher.finalize();
-            rsp.set_header("Sec-WebSocket-Accept", &crate::base64_encode(&res[..]));
+            rsp.set_header(
+                "Sec-WebSocket-Accept",
+                &crate::common::base64::base64_encode(&res[..]),
+            );
             rsp.set_header("Sec-WebSocket-Version", ver);
             rsp.set_header("Connection", "Upgrade");
             rsp.set_header("Upgrade", "websocket");
@@ -247,12 +250,6 @@ fn _write_msg(stream: &TcpStream, mut opcode: u8, msg: &[u8]) {
     write_msg(stream, &rsp);
 }
 
-/// 四个u2的数字合为一个u8
-fn _merge_num(a: &[u8], len: usize) -> u8 {
-    // u8::fr
-    0
-}
-
 /// 读取数据体
 fn _read_data(br: &mut BufReader<&TcpStream>, frame: &mut _Frame) -> SResult<()> {
     let mut res = _read_frame(br, frame._payload_len as usize)?;
@@ -309,12 +306,12 @@ fn _read_head(br: &mut BufReader<&TcpStream>, frame: &mut _Frame) -> SResult<()>
 
 /// 数据反转，处理大小端序
 fn _reverse_data(data: &mut Vec<u8>) {
-    let mut tmp = 0;
+    let mut _tmp = 0;
     let len = data.len();
     for i in 0..len / 2 {
-        tmp = data[i + 1];
+        _tmp = data[i + 1];
         data[i + 1] = data[len - i - 1];
-        data[len - i - 1] = tmp;
+        data[len - i - 1] = _tmp;
     }
 }
 
@@ -330,7 +327,7 @@ fn _read_frame(br: &mut BufReader<&TcpStream>, len: usize) -> SResult<Vec<u8>> {
     let mut puf = vec![0; len];
     let res = br.read(&mut puf);
     if res.is_err() {
-        return crate::sresult_from_err(res.unwrap_err());
+        return crate::common::errs::sresult_from_err(res.unwrap_err());
     }
     Ok(puf)
 }
@@ -348,7 +345,7 @@ impl<'a> Default for WSServer<'a> {
     }
 }
 
-fn _none_handler(data: &BytesMut) -> Option<Vec<u8>> {
+fn _none_handler(_data: &BytesMut) -> Option<Vec<u8>> {
     None
 }
 

@@ -1,8 +1,4 @@
-use std::{
-    fmt::{Debug, Display},
-    num::ParseIntError,
-    string::FromUtf8Error,
-};
+use std::fmt::{Debug, Display};
 
 /// 请求格式错误
 pub const ERR_FORMAT: &'static str = "格式错误";

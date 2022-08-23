@@ -1,4 +1,5 @@
-use crate::{Body, Header, HeaderType, SResult};
+use super::{header::*, Body};
+use crate::common::errs::SResult;
 
 //////////////////////////////////////////////////////
 /// 版本 空格 状态码 空格 状态说明 回车 换行
