@@ -5,7 +5,7 @@ mod im_server;
 mod tcp;
 mod ws;
 
-pub use bytes::self;
+pub use bytes::{self};
 pub use common::*;
 pub use http::{
     header::{Header as HttpHeader, HeaderType},
