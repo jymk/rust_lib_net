@@ -11,9 +11,8 @@ use super::frame::_Frame;
 use crate::common::LoopStatus;
 use crate::http::{req::*, rsp::*};
 use crate::{
-    common::time as common_time,
+    common::{time as common_time, errs::SResult},
     http::server::{back_with_header, write_msg},
-    SResult,
 };
 
 type Handler = fn(&BytesMut) -> Option<Vec<u8>>;
