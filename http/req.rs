@@ -87,7 +87,7 @@ impl HttpRequest {
     pub fn get_body_bytes(&self) -> &BytesMut {
         self._body.get_body()
     }
-    pub fn get_body_uu8s(&self) -> Vec<u8> {
+    pub fn get_body_u8s(&self) -> Vec<u8> {
         self._body.get_u8s()
     }
     pub fn get_header(&self) -> &Header {
