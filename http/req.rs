@@ -4,6 +4,8 @@ use crate::common::errs::SResult;
 use std::collections::BTreeMap;
 use std::sync::atomic::AtomicUsize;
 
+use bytes::BytesMut;
+
 //接收到的请求的请求id
 static ACCEPT_REQ_ID: AtomicUsize = AtomicUsize::new(1);
 
@@ -82,7 +84,10 @@ impl HttpRequest {
     pub(crate) fn get_body(&self) -> &Body {
         &self._body
     }
-    pub fn get_body_bytes(&self) -> Vec<u8> {
+    pub fn get_body_bytes(&self) -> &BytesMut {
+        self._body.get_body()
+    }
+    pub fn get_body_uu8s(&self) -> Vec<u8> {
         self._body.get_u8s()
     }
     pub fn get_header(&self) -> &Header {
