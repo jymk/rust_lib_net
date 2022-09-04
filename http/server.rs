@@ -106,13 +106,6 @@ fn handler_with_route(stream: &TcpStream, server: &Server, suc_code: StatusCode)
         back(stream, StatusCode::BadRequest, code.unwrap_err());
         return;
     }
-    //处理body
-    // let params = req.get_body().analyze_form(&header);
-    // println!("params={:?}", params);
-    // let mut params = req.body_mut().analyze_body(&header);
-    // req.set_param(&mut params);
-    // println!("req_header={:?}", req.get_header(),);
-    // println!("req_body={:?}", String::from_utf8(req.get_body().get_u8s()));
 
     let mut rsp = HttpResponse::default();
     //方法前执行
@@ -184,9 +177,13 @@ fn _none_after(_req: &HttpRequest, _rsp: &mut HttpResponse) {}
 
 #[test]
 fn test() {
-    // super::route::add_get_route("/", |req, rsp| {
-    //     rsp.set_body("<h1>Hello World!</h1>");
-    // });
-    // super::route::print_routes();
-    // Server::default().start();
+    super::route::add_get_route("/", |req, rsp| {
+        rsp.set_body("<h1>Hello World!</h1>");
+    });
+    super::route::add_post_route("/", |req, rsp| {
+        println!("body={:?}", req.get_body());
+        rsp.set_body("<h1>Hello World!</h1>");
+    });
+    super::route::print_routes();
+    Server::default().start();
 }

@@ -50,7 +50,7 @@ impl Header {
         let key = strings::extract_normal_lower_char(key);
         let mut val = val.trim().to_string();
         // 若key为content-type的form-data，需获取val的boundary
-        if &key == "contenttype" {
+        if &key == "content-type" {
             let valc = val.clone();
             let val_deal = valc.split_once(";");
             if val_deal.is_some() {
@@ -97,7 +97,7 @@ impl Header {
     }
 
     pub fn get_content_type(&self) -> Option<String> {
-        let ct = self.get("contenttype");
+        let ct = self.get("content-type");
         if ct.is_none() {
             return None;
         }
@@ -105,7 +105,7 @@ impl Header {
     }
 
     pub fn get_content_length(&self) -> Option<usize> {
-        let content_len = self._inner.get("contentlength");
+        let content_len = self._inner.get("content-length");
         if content_len.is_none() {
             return None;
         }
