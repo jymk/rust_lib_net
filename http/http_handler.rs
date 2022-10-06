@@ -5,8 +5,8 @@ use std::{
     time::Duration,
 };
 
+use common::strings;
 use crate::{
-    common::strings,
     http::{header, Header},
     HeaderType,
 };

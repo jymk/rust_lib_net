@@ -8,12 +8,9 @@ use bytes::BytesMut;
 use sha1::{Digest, Sha1};
 
 use super::frame::_Frame;
-use crate::common::LoopStatus;
+use crate::http::server::{back_with_header, write_msg};
 use crate::http::{req::*, rsp::*};
-use crate::{
-    common::{time as common_time, errs::SResult},
-    http::server::{back_with_header, write_msg},
-};
+use common::{errs::SResult, status::LoopStatus, time as common_time};
 
 type Handler = fn(&BytesMut) -> Option<Vec<u8>>;
 
@@ -143,7 +140,7 @@ impl<'a> WSServer<'a> {
             let res = hasher.finalize();
             rsp.set_header(
                 "Sec-WebSocket-Accept",
-                &crate::common::base64::base64_encode(&res[..]),
+                &common::base64::base64_encode(&res[..]),
             );
             rsp.set_header("Sec-WebSocket-Version", ver);
             rsp.set_header("Connection", "Upgrade");
@@ -326,7 +323,7 @@ fn _read_frame(br: &mut BufReader<&TcpStream>, len: usize) -> SResult<Vec<u8>> {
     let mut puf = vec![0; len];
     let res = br.read(&mut puf);
     if res.is_err() {
-        return crate::common::errs::sresult_from_err(res.unwrap_err());
+        return common::errs::sresult_from_err(res.unwrap_err());
     }
     Ok(puf)
 }

@@ -5,8 +5,7 @@ mod im_server;
 mod tcp;
 mod ws;
 
-pub use bytes::{self};
-pub use common::*;
+pub use bytes;
 pub use http::{
     header::{Header as HttpHeader, HeaderType},
     req::HttpRequest,
@@ -18,7 +17,8 @@ pub use http::{
 
 pub use ws::server::WSServer;
 
-fn _main() {
+#[test]
+fn test() {
     // println!("Hello, world!");
     let args = std::env::args().collect::<Vec<_>>();
     if args.len() < 2 {

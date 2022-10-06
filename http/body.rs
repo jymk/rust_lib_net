@@ -1,4 +1,4 @@
-use crate::common::LoopStatus;
+use common::status::LoopStatus;
 
 use super::{errs, header::Header, req::HttpMethod};
 // use serde_json::Value;
@@ -7,6 +7,8 @@ use std::{
     io::{BufRead, BufReader, Read},
     net::TcpStream,
 };
+
+use common::errs::SResult;
 
 use bytes::{BufMut, BytesMut};
 
@@ -42,7 +44,7 @@ impl Body {
         br: &mut BufReader<&TcpStream>,
         header: &Header,
         method: HttpMethod,
-    ) -> errs::SResult<()> {
+    ) -> SResult<()> {
         //若有Transfer-Encoding，且其为chunked
         let te = header.get("transferencoding");
         if te.is_some() {
@@ -74,7 +76,7 @@ impl Body {
         if content_length.is_none() {
             //no content
             if method == HttpMethod::POST {
-                return super::errs::sresult_from_err("Content-Length is none");
+                return common::errs::sresult_from_err("Content-Length is none");
             } else {
                 content_length = Some(0);
             }

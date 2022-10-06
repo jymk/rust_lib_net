@@ -4,7 +4,7 @@ use std::{
     net::TcpStream,
 };
 
-use crate::common::{self, strings, time};
+use common::{errs::SResult, strings, time};
 
 use super::errs;
 
@@ -78,7 +78,7 @@ impl Header {
         self._boundary.clone()
     }
 
-    pub(crate) fn parse_head<'a>(&mut self, head: &'a str) -> errs::SResult<Vec<&'a str>> {
+    pub(crate) fn parse_head<'a>(&mut self, head: &'a str) -> SResult<Vec<&'a str>> {
         let lines = head.split("\r\n").collect::<Vec<_>>();
         //第一行字符串
         let first = match lines.get(0) {

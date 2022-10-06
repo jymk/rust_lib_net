@@ -4,7 +4,8 @@ use std::{
     net::TcpStream,
 };
 
-use crate::{common::LoopStatus, http::http_handler, HttpRequest, HttpResponse, StatusCode};
+use crate::{http::http_handler, HttpRequest, HttpResponse, StatusCode};
+use common::status::LoopStatus;
 
 use super::{
     header::{self, HeaderType},

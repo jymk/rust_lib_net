@@ -8,7 +8,7 @@ use std::{
 };
 
 use super::http::rw::{self, write_from_cmd};
-use crate::common::LoopStatus;
+use common::status::LoopStatus;
 
 pub(crate) fn client(addr: &str) -> bool {
     let begin = SystemTime::now();

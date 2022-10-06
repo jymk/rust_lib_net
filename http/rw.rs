@@ -3,7 +3,7 @@ use std::{
     net::TcpStream,
 };
 
-use crate::common::LoopStatus;
+use common::status::LoopStatus;
 
 pub(crate) fn read_from_net<'a>(
     ts: &TcpStream,

@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::common::strings::str_to_static;
+use common::strings::str_to_static;
 
 use super::{
     req::{HttpMethod, HttpRequest},
