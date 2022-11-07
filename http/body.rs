@@ -46,7 +46,7 @@ impl Body {
         method: HttpMethod,
     ) -> SResult<()> {
         //若有Transfer-Encoding，且其为chunked
-        let te = header.get("transferencoding");
+        let te = header.get("transfer-encoding");
         if te.is_some() {
             // 若为file，目前只能读取一个file
             let te = te.unwrap();
