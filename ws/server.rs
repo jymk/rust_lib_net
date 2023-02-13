@@ -65,27 +65,32 @@ impl<'a> WSServer<'a> {
                     match self._status {
                         WSStatus::Start => self._on_start(stream),
                         WSStatus::End => break,
-                        WSStatus::Handling => self._on_msg(stream),
+                        WSStatus::Handling => {
+                            if !self._on_msg(stream) { break;}
+                        },
                     }
                 }
                 LoopStatus::Break
             });
     }
 
-    fn _on_msg(&mut self, stream: &TcpStream) {
+    fn _on_msg(&mut self, stream: &TcpStream) -> bool {
         // 接收到消息后更新expire
         self._update_expire_with_timeout(self._timeout);
 
         let mut br = BufReader::new(stream);
 
         let frame = _read_msg(&mut br, self);
+        if frame.is_none() {
+            return false;
+        }
         match frame._opcode {
             0x8 => {
-                return;
+                return true;
             }
             0x9 => {
                 _write_msg(stream, 0xa, b"");
-                return;
+                return true;
             }
             _ => {}
         }
@@ -107,6 +112,7 @@ impl<'a> WSServer<'a> {
         // rsp_msg.extend_from_slice("收到消息: ".as_bytes());
         // rsp_msg.append(&mut frame._data.to_vec());
         // _write_msg(stream, 0x1, &rsp_msg);
+        true
     }
 
     fn _on_start(&mut self, stream: &TcpStream) {
@@ -158,7 +164,7 @@ impl<'a> WSServer<'a> {
     }
 }
 
-fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> _Frame {
+fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> Option<_Frame> {
     let mut frame = _Frame::default();
     let mut flag = false;
     loop {
@@ -167,12 +173,12 @@ fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> _
         if res.is_err() {
             eprintln!("_read_head: err={:?}", res.unwrap_err());
             server._status = WSStatus::End;
-            break;
+            return None;
         }
         match tmp._opcode {
             0x8 => {
                 server._status = WSStatus::End;
-                break;
+                return None;
             }
             0x9 => break,
             _ => {}
@@ -185,7 +191,7 @@ fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> _
         if res.is_err() {
             eprintln!("_read_data: err={:?}", res.unwrap_err());
             server._status = WSStatus::End;
-            break;
+            return None;
         }
         // println!("single_frame={:?}", tmp);
         frame._data.extend(tmp._data);
@@ -193,7 +199,7 @@ fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> _
             break;
         }
     }
-    frame
+    Some(frame)
 }
 
 /// 写数据
