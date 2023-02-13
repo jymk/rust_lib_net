@@ -84,6 +84,7 @@ impl<'a> WSServer<'a> {
         if frame.is_none() {
             return false;
         }
+        let frame = frame.unwrap();
         match frame._opcode {
             0x8 => {
                 return true;
