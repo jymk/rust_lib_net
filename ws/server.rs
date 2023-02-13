@@ -63,7 +63,7 @@ impl<'a> WSServer<'a> {
                     // 超时后关闭连接
                     let mut expire = self._expire.get(key);
                     if expire.is_none() {
-                        expire = Some(DEFAULT_TIMEOUT);
+                        expire = Some(&DEFAULT_TIMEOUT);
                     }
                     let expire = expire.unwrap();
                     if common_time::now_drt() > *expire {
@@ -73,7 +73,7 @@ impl<'a> WSServer<'a> {
                         WSStatus::Start => self._on_start(stream),
                         WSStatus::End => break,
                         WSStatus::Handling => {
-                            if !self._on_msg(stream) { break;}
+                            if !self._on_msg(key, stream) { break;}
                         },
                     }
                 }
@@ -81,9 +81,9 @@ impl<'a> WSServer<'a> {
             });
     }
 
-    fn _on_msg(&mut self, stream: &TcpStream) -> bool {
+    fn _on_msg(&mut self, key: &String, stream: &TcpStream) -> bool {
         // 接收到消息后更新expire
-        self._update_expire_with_timeout(self._timeout);
+        self._update_expire_with_timeout(key, self._timeout);
 
         let mut br = BufReader::new(stream);
 
