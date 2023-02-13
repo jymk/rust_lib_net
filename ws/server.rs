@@ -2,6 +2,7 @@ use std::{
     io::{BufReader, Read},
     net::TcpStream,
     time::Duration,
+	collections::BTreeMap,
 };
 
 use bytes::BytesMut;
@@ -14,17 +15,18 @@ use common::{errs::SResult, status::LoopStatus, time as common_time};
 
 type Handler = fn(&BytesMut) -> Option<Vec<u8>>;
 
+static DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// 默认addr: localhost:7880
 /// 默认超时: 30s
 /// 这里不需要指定path，因为每次启动都是不能占用同样端口的，并且每次启动只能有一个websocket服务
 /// 暂不支持分片传输
 /// 心跳时不处理消息
 /// 若opcode传值大于2^4 -1 或者 回包为None，则置为0xa(pongs)
-/// 暂不支持多连接，多连接需把expire改为ip => Duration映射
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct WSServer<'a> {
     _addr: &'a str,
-    _expire: Duration,
+    _expire: BTreeMap<String, Duration>,
     _timeout: Duration,
     _status: WSStatus,
     _handler: Handler,
@@ -41,25 +43,30 @@ impl<'a> WSServer<'a> {
         self
     }
 
-    pub fn with_timeout(&mut self, timeout: Duration) -> &mut Self {
+    pub fn with_timeout(&mut self, key: &String, timeout: Duration) -> &mut Self {
         self._timeout = timeout;
-        self._update_expire_with_timeout(timeout);
+        self._update_expire_with_timeout(key, timeout);
         self
     }
 
     /// 根据timeout更新expire
-    fn _update_expire_with_timeout(&mut self, timeout: Duration) {
-        self._expire = common_time::now_drt() + timeout;
+    fn _update_expire_with_timeout(&mut self, key: &String, timeout: Duration) {
+		self._expire.insert(key.clone(), common_time::now_drt() + timeout);
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self, key: &String) {
         crate::tcp::server::TcpServer::default()
             .with_addr(self._addr)
             .start(|stream| {
                 self._status = WSStatus::Start;
                 loop {
-                    // 超时后关闭连接(在超时后会最后处理一个请求才会关闭连接)
-                    if common_time::now_drt() > self._expire {
+                    // 超时后关闭连接
+                    let mut expire = self._expire.get(key);
+                    if expire.is_none() {
+                        expire = Some(DEFAULT_TIMEOUT);
+                    }
+                    let expire = expire.unwrap();
+                    if common_time::now_drt() > *expire {
                         break;
                     }
                     match self._status {
@@ -337,12 +344,11 @@ fn _read_frame(br: &mut BufReader<&TcpStream>, len: usize) -> SResult<Vec<u8>> {
 
 impl<'a> Default for WSServer<'a> {
     fn default() -> Self {
-        let default_timeout = Duration::from_secs(30);
         Self {
             _addr: "127.0.0.1:7880",
             _status: WSStatus::default(),
-            _expire: common_time::now_drt() + default_timeout,
-            _timeout: default_timeout,
+            _expire: BTreeMap::default(),
+            _timeout: DEFAULT_TIMEOUT,
             _handler: _none_handler,
         }
     }
