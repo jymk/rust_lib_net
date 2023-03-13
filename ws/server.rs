@@ -1,8 +1,8 @@
 use std::{
+    collections::BTreeMap,
     io::{BufReader, Read},
     net::TcpStream,
     time::Duration,
-	collections::BTreeMap,
 };
 
 use bytes::BytesMut;
@@ -50,11 +50,12 @@ impl<'a> WSServer<'a> {
     }
 
     /// 根据timeout更新expire
-    fn _update_expire_with_timeout(&mut self, key: &String, timeout: Duration) {
-		self._expire.insert(key.clone(), common_time::now_drt() + timeout);
+    fn _update_expire_with_timeout(&mut self, key: &str, timeout: Duration) {
+        self._expire
+            .insert(key.to_string(), common_time::now_drt() + timeout);
     }
 
-    pub fn start(&mut self, key: &String) {
+    pub fn start(&mut self, key: &str) {
         crate::tcp::server::TcpServer::default()
             .with_addr(self._addr)
             .start(|stream| {
@@ -73,15 +74,17 @@ impl<'a> WSServer<'a> {
                         WSStatus::Start => self._on_start(stream),
                         WSStatus::End => break,
                         WSStatus::Handling => {
-                            if !self._on_msg(key, stream) { break;}
-                        },
+                            if !self._on_msg(key, stream) {
+                                break;
+                            }
+                        }
                     }
                 }
                 LoopStatus::Break
             });
     }
 
-    fn _on_msg(&mut self, key: &String, stream: &TcpStream) -> bool {
+    fn _on_msg(&mut self, key: &str, stream: &TcpStream) -> bool {
         // 接收到消息后更新expire
         self._update_expire_with_timeout(key, self._timeout);
 

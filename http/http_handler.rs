@@ -5,13 +5,15 @@ use std::{
     time::Duration,
 };
 
-use common::strings;
 use crate::{
     http::{header, Header},
     HeaderType,
 };
+use common::strings;
 
 use super::rsp::StatusCode;
+
+/// 因为这里要解析网址为ip，所以放弃了
 
 #[allow(unused)]
 pub(crate) fn send(addr: &str, http_txt: &[u8]) {
@@ -34,13 +36,11 @@ pub(crate) fn send(addr: &str, http_txt: &[u8]) {
     let mut rsp = super::rsp::HttpResponse::new(&head);
     match rsp.as_mut() {
         Ok(x) => {
-            // let code = super::handle_head(x, &mut br);
-            // println!(
-            //     "code={:?}, header={:?}, body={:?}",
-            //     code,
-            //     x.get_header(),
-            //     String::from_utf8(x.get_body().clone())
-            // )
+            println!(
+                "header={:?}, ",
+                x.headers(),
+                // String::from_utf8(x.get_body().clone())
+            )
         }
         Err(e) => eprintln!("e={:?}", e),
     }
@@ -158,32 +158,32 @@ pub(crate) fn response<T: std::fmt::Debug>(
 
 #[test]
 fn test() {
-    let a = String::from("\'");
-    println!("a={}", a);
-    let fa = format!("{:?}", a);
-    println!("a={}", fa);
+    // let a = String::from("\'");
+    // println!("a={}", a);
+    // let fa = format!("{:?}", a);
+    // println!("a={}", fa);
     // let ffa = format!("{:?}", fa);
     // println!("a={}", ffa);
     // let req = get("www.baidu.com",
     // "/sugrec?prod=pc_his&from=pc_web&json=1&sid=36309_31660_36005_35910_36165_34584_35978_36345_26350_36349_36311_36061&hisdata=&_t=1651989831478&req=2&csor=0", "");
     // send("www.baidu.com:80", req.as_bytes());
 
-    // let header = btreemap!(
-    //     "X-Requested-With".to_string() => "XMLHttpRequest".to_string(),
-    //     "Referer".to_string() => "https://cn.pornhub.com/".to_string(),
-    //     "Cookie".to_string() => "bs=5tn137c9gqphkmavp4fm5lfv0y5hdc7l; ss=573227799567438799; platform=pc; fg_fcf2e67d6468e8e1072596aead761f2b=7943.100000; fg_ee26b76392ae0c54fbcf7c635e3da0fa=91225.100000; fg_1ad264a225f47ac0e57be2740d6aa857=10575.100000; il=v1nb6Go30V25r28BQQsYtYDOY46017N1dc18Hwy10m2mkxNjU5Mjc1MDI3LWl1dkRwOFJMeFZWQ2N2VFR1d3dnOHBrU3czWDU4SzZCdmxjV0w1Vw..; expiredEnterModalShown=1; fg_ec733c207a91321a9ed22b01850e820e=2705.100000; fg_1f595a21748e9a93d04690b86a079a2a=34869.100000; fg_7eb5e6299ee952620df104ed2e7aac86=24270.100000; atatusScript=hide; ua=f0f466a59a9efd2032e38b07d3447d1c".to_string(),
-    //     "Sec-Fetch-Dest".to_string() => "empty".to_string(),
-    //     "Sec-Fetch-Mode".to_string() => "cors".to_string(),
-    //     "Sec-Fetch-Site".to_string() => "https://cn.pornhub.com/".to_string(),
-    //     "Referer".to_string() => "same-origin".to_string(),
-    //     "TE".to_string() => "trailers".to_string(),
-    // );
-    // let req = get_with_header("cn.pornhub.com",
-    // "/front/menu_livesex?segment=straight&token=MTY1MTk5MjU1MZIU4aJmZ_Lnw46E1gpBWpjhL8-Tf9L41Oo21t_rCrISoqW8x8ocwxXtTMl32VMM6pBrnMgaZJmenbdRDlU9p64.?",
-    // "",
-    // Some(header));
-    // println!("req={}", req);
-    // send("https://cn.pornhub.com:80", req.as_bytes());
+    let h = BTreeMap::from([
+        ("X-Requested-With".to_string() , "XMLHttpRequest".to_string()),
+        ("Referer".to_string() , "https://cn.pornhub.com/".to_string()),
+        ("Cookie".to_string() , "bs=5tn137c9gqphkmavp4fm5lfv0y5hdc7l; ss=573227799567438799; platform=pc; fg_fcf2e67d6468e8e1072596aead761f2b=7943.100000; fg_ee26b76392ae0c54fbcf7c635e3da0fa=91225.100000; fg_1ad264a225f47ac0e57be2740d6aa857=10575.100000; il=v1nb6Go30V25r28BQQsYtYDOY46017N1dc18Hwy10m2mkxNjU5Mjc1MDI3LWl1dkRwOFJMeFZWQ2N2VFR1d3dnOHBrU3czWDU4SzZCdmxjV0w1Vw..; expiredEnterModalShown=1; fg_ec733c207a91321a9ed22b01850e820e=2705.100000; fg_1f595a21748e9a93d04690b86a079a2a=34869.100000; fg_7eb5e6299ee952620df104ed2e7aac86=24270.100000; atatusScript=hide; ua=f0f466a59a9efd2032e38b07d3447d1c".to_string()),
+        ("Sec-Fetch-Dest".to_string() , "empty".to_string()),
+        ("Sec-Fetch-Mode".to_string() , "cors".to_string()),
+        ("Sec-Fetch-Site".to_string() , "https://cn.pornhub.com/".to_string()),
+        ("Referer".to_string() , "same-origin".to_string()),
+        ("TE".to_string() , "trailers".to_string())
+    ]);
+    let req = get_with_header("cn.pornhub.com",
+    "/front/menu_livesex?segment=straight&token=MTY1MTk5MjU1MZIU4aJmZ_Lnw46E1gpBWpjhL8-Tf9L41Oo21t_rCrISoqW8x8ocwxXtTMl32VMM6pBrnMgaZJmenbdRDlU9p64.?",
+    "",
+    Some(h));
+    println!("req={}", req);
+    send("66.254.114.41:80", req.as_bytes());
 
     // let req = post(
     //     "jymkyu.top:443",
