@@ -1,4 +1,4 @@
-use common::status::LoopStatus;
+use common::{error, status::LoopStatus};
 use std::net::{TcpListener, TcpStream};
 
 #[derive(Clone)]
@@ -26,7 +26,7 @@ impl<'a> TcpServer<'a> {
                     LoopStatus::Continue => continue,
                     _ => {}
                 },
-                Err(e) => eprintln!("e={:?}", e),
+                Err(e) => error!("e={:?}", e),
             }
         }
     }
@@ -42,4 +42,19 @@ impl<'a> Default for TcpServer<'a> {
 
 fn _none_handle(_stream: &TcpStream) -> LoopStatus<bool> {
     LoopStatus::Break
+}
+
+pub trait Server<'a> {
+    /// 设置启动地址
+    fn with_addr(&mut self, addr: &'a str) -> &mut Self;
+
+    /// 启动服务
+    fn start(&mut self);
+}
+
+#[test]
+fn test_tcp_server() {
+    TcpServer::default()
+        .with_addr("127.0.0.1:7878")
+        .start(|_stream| LoopStatus::Break)
 }

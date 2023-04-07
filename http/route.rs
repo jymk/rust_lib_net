@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use common::strings::str_to_static;
+use common::{debug, strings::str_to_static};
 
 use super::{
     req::{HttpMethod, HttpRequest},
@@ -62,7 +62,7 @@ pub(crate) fn no_has_fun(method: HttpMethod, url: &str) -> bool {
     let r = instance.read().unwrap();
     let fun = r.get(&Route::new(method, url));
     // print_routes();
-    // println!("cur_method={:?}, cur_url={}", method, url);
+    // debug!("cur_method={:?}, cur_url={}", method, url);
     fun.is_none()
 }
 
@@ -96,13 +96,13 @@ pub fn print_routes() {
     let instance = _get_route_instance();
     let routes = instance.read().unwrap();
     for route in &*routes {
-        println!("{:?}", route.0);
+        debug!("{:?}", route.0);
     }
 }
 
 #[test]
 fn test() {
     // for r in routes() {
-    //     println!("route={:?}", r.0);
+    //     debug!("route={:?}", r.0);
     // }
 }

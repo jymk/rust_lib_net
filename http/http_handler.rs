@@ -5,11 +5,11 @@ use std::{
     time::Duration,
 };
 
-use common::strings;
 use crate::{
     http::{header, Header},
     HeaderType,
 };
+use common::{debug, error, strings};
 
 use super::rsp::StatusCode;
 
@@ -22,27 +22,25 @@ pub(crate) fn send(addr: &str, http_txt: &[u8]) {
     let wsize = match bw.write(http_txt) {
         Ok(x) => x,
         Err(e) => {
-            eprintln!("e={:?}", e);
+            error!("e={:?}", e);
             0
         }
     };
     //特别重要，flush后才能读
     bw.flush().unwrap();
-    println!("wsize={}", wsize);
+    debug!("wsize={}", wsize);
     let mut br = BufReader::new(&stream);
     let head = header::read_head(&mut br);
     let mut rsp = super::rsp::HttpResponse::new(&head);
     match rsp.as_mut() {
         Ok(x) => {
-            // let code = super::handle_head(x, &mut br);
-            // println!(
-            //     "code={:?}, header={:?}, body={:?}",
-            //     code,
-            //     x.get_header(),
-            //     String::from_utf8(x.get_body().clone())
-            // )
+            debug!(
+                "header={:?}, body={:?}",
+                x.headers(),
+                String::from_utf8(x.get_body().get_u8s()),
+            )
         }
-        Err(e) => eprintln!("e={:?}", e),
+        Err(e) => error!("e={:?}", e),
     }
 }
 
@@ -122,7 +120,7 @@ pub(crate) fn post(host: &str, url: &str, body: &str) -> String {
 
     req.push_str("\r\n");
     req.push_str(body);
-    println!("req={}", req);
+    debug!("req={}", req);
     req
 }
 
@@ -159,11 +157,11 @@ pub(crate) fn response<T: std::fmt::Debug>(
 #[test]
 fn test() {
     let a = String::from("\'");
-    println!("a={}", a);
+    debug!("a={}", a);
     let fa = format!("{:?}", a);
-    println!("a={}", fa);
+    debug!("a={}", fa);
     // let ffa = format!("{:?}", fa);
-    // println!("a={}", ffa);
+    // debug!("a={}", ffa);
     // let req = get("www.baidu.com",
     // "/sugrec?prod=pc_his&from=pc_web&json=1&sid=36309_31660_36005_35910_36165_34584_35978_36345_26350_36349_36311_36061&hisdata=&_t=1651989831478&req=2&csor=0", "");
     // send("www.baidu.com:80", req.as_bytes());
@@ -182,7 +180,7 @@ fn test() {
     // "/front/menu_livesex?segment=straight&token=MTY1MTk5MjU1MZIU4aJmZ_Lnw46E1gpBWpjhL8-Tf9L41Oo21t_rCrISoqW8x8ocwxXtTMl32VMM6pBrnMgaZJmenbdRDlU9p64.?",
     // "",
     // Some(header));
-    // println!("req={}", req);
+    // debug!("req={}", req);
     // send("https://cn.pornhub.com:80", req.as_bytes());
 
     // let req = post(

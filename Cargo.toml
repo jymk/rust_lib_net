@@ -12,3 +12,4 @@ path = "lib.rs"
 bytes = "1.1.0"
 sha1 = "0.10.1"
 common = { git = 'https://gitee.com/jymkyu/common.git' }
+protobuf = "*"

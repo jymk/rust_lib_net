@@ -8,12 +8,12 @@ use std::{
 };
 
 use super::http::rw::{self, write_from_cmd};
-use common::status::LoopStatus;
+use common::{debug, status::LoopStatus};
 
 pub(crate) fn client(addr: &str) -> bool {
     let begin = SystemTime::now();
     let mut stream = TcpStream::connect(&addr).expect("connect failed");
-    println!(
+    debug!(
         "Successfully connected to server in addr is {},  cost: {:?}",
         addr,
         SystemTime::now().duration_since(begin)
@@ -34,11 +34,11 @@ pub(crate) fn client(addr: &str) -> bool {
                 if s == "program exit" {
                     break;
                 }
-                println!("r_result: {}", s);
+                debug!("r_result: {}", s);
             }
         }
     }
-    println!("client stop");
+    debug!("client stop");
 
     return true;
 }

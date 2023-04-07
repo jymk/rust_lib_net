@@ -1,5 +1,5 @@
 #![allow(unused)]
-use common::status::LoopStatus;
+use common::{debug, status::LoopStatus};
 use std::{
     io::{Error, Read, Write},
     net::{TcpListener, TcpStream},
@@ -8,37 +8,37 @@ use std::{
 
 pub(crate) fn server(addr: &str) {
     let listener = TcpListener::bind(addr).expect("bind failed");
-    println!("bind success.");
+    debug!("bind success.");
     // let mut buf = String::new();
     use super::http::rw;
     for stream in listener.incoming() {
-        println!("connect success...");
+        debug!("connect success...");
         // buf.clear();
         let begin = SystemTime::now();
         match stream {
             Ok(mut ts) => {
-                println!("cost: {:?}", SystemTime::now().duration_since(begin));
+                debug!("cost: {:?}", SystemTime::now().duration_since(begin));
                 let mut buf = Vec::new();
                 loop {
                     match rw::read_from_net(&ts, &mut buf) {
                         LoopStatus::Break => {
                             if let Ok(len) = ts.write(b"program exit") {
-                                println!("break");
+                                debug!("break");
                             }
                             break;
                         }
                         LoopStatus::Continue => {
                             if let Ok(len) = ts.write(b"program continue") {
-                                println!("continue");
+                                debug!("continue");
                             }
                             continue;
                         }
                         LoopStatus::Normal((req, len)) => {
-                            println!("buf: {:?}", req);
+                            debug!("buf: {:?}", req);
                             if req.len() >= 4 && req.starts_with("exit") {
                                 //程序退出
                                 if let Ok(len) = ts.write(b"program exit") {
-                                    println!("program exit");
+                                    debug!("program exit");
                                 }
                                 break;
                             } else {
@@ -49,9 +49,9 @@ pub(crate) fn server(addr: &str) {
                 }
             }
             Err(e) => {
-                println!("e:{:?}", e);
+                debug!("e:{:?}", e);
             }
         }
     }
-    println!("server stop");
+    debug!("server stop");
 }

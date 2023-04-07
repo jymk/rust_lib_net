@@ -4,7 +4,7 @@ use std::{
     net::TcpStream,
 };
 
-use common::{errs::SResult, strings, time};
+use common::{debug, errs::SResult, strings, time};
 
 use super::errs;
 
@@ -47,7 +47,7 @@ impl Header {
     }
 
     pub fn set(&mut self, key: &str, val: &str) {
-        let key = strings::extract_normal_lower_char(key);
+        let key = strings::trim_and_lower(key);
         let mut val = val.trim().to_string();
         // 若key为content-type的form-data，需获取val的boundary
         if &key == "content-type" {
@@ -70,7 +70,7 @@ impl Header {
 
     pub fn get(&self, key: &str) -> Option<&String> {
         self._inner
-            .get(&common::strings::extract_normal_lower_char(key))
+            .get(&common::strings::trim_and_lower(key))
             .clone()
     }
 
@@ -134,7 +134,7 @@ pub(crate) fn set_header<'a>(
     key: &str,
     val: &str,
 ) -> &'a mut HeaderType {
-    let key = strings::extract_normal_lower_char(key);
+    let key = strings::trim_and_lower(key);
     let val = val.trim().to_string();
     header.insert(key, val);
     header
@@ -146,7 +146,7 @@ pub(crate) fn read_head(br: &mut BufReader<&TcpStream>) -> String {
     loop {
         let mut puf = String::default();
         if let Ok(_len) = br.read_line(&mut puf) {
-            // println!("puf={:?}", puf);
+            debug!("puf={:?}", puf);
             if puf.is_empty() || puf == "\r\n" {
                 break;
             }
