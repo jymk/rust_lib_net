@@ -3,11 +3,12 @@ mod http;
 mod im_client;
 mod im_server;
 pub mod pb;
+pub mod route;
 mod tcp;
 pub mod ws;
 
 #[allow(unused_imports)]
-use ::common::{cm_log, debug};
+use ::common::{cm_log, trace};
 
 pub use bytes;
 pub use http::{
@@ -24,11 +25,11 @@ pub use ws::server::WSServer;
 #[test]
 fn test() {
     cm_log::log_init(::common::LevelFilter::Debug);
-    debug!("Hello, world!");
+    trace!("Hello, world!");
     let args = std::env::args().collect::<Vec<_>>();
-    debug!("args={:?}, arglen={}", args, args.len());
+    trace!("args={:?}, arglen={}", args, args.len());
     if args.len() < 2 {
-        debug!("miss param");
+        trace!("miss param");
         panic!("miss param");
     }
     if &args[1] == "s" {

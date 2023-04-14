@@ -12,10 +12,11 @@ use crate::http::server::{back_with_header, write_msg};
 use crate::http::{req::*, rsp::*};
 use crate::tcp::server::*;
 use common::{
-    debug, error,
+    error,
     errs::SResult,
     status::LoopStatus,
     time::{self as common_time, now_drt},
+    trace,
 };
 
 type Handler = fn(&BytesMut) -> Option<Vec<u8>>;
@@ -29,15 +30,15 @@ static DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 /// 心跳时不处理消息
 /// 若opcode传值大于2^4 -1 或者 回包为None，则置为0xa(pongs)
 #[derive(Clone)]
-pub struct WSServer<'a> {
-    _addr: &'a str,
+pub struct WSServer {
+    _tcp_svr: TcpServer,
     _expire: Duration,
     _timeout: Duration,
     _status: WSStatus,
     _handler: Handler,
 }
 
-impl<'a> WSServer<'a> {
+impl WSServer {
     pub fn with_handler(&mut self, handler: Handler) -> &mut Self {
         self._handler = handler;
         self
@@ -85,21 +86,15 @@ impl<'a> WSServer<'a> {
         } else {
             rsp_msg = rsp.unwrap();
         }
-        _write_msg(stream, opcode, &rsp_msg);
-
-        // debug!("收到消息");
         // 向前端写数据
-        // let mut rsp_msg = Vec::default();
-        // rsp_msg.extend_from_slice("收到消息: ".as_bytes());
-        // rsp_msg.append(&mut frame._data.to_vec());
-        // _write_msg(stream, 0x1, &rsp_msg);
+        _write_msg(stream, opcode, &rsp_msg);
         true
     }
 
     fn _on_start(&mut self, stream: &TcpStream) {
         let mut br = BufReader::new(stream);
-        let buf = crate::http::header::read_head(&mut br);
-        // debug!("\nreq={:?}", buf);
+        let buf = crate::http::header::read_header(&mut br);
+        // trace!("\nreq={:?}", buf);
         //读取header
         let req = HttpRequest::new(&buf);
         if req.is_err() {
@@ -116,7 +111,7 @@ impl<'a> WSServer<'a> {
             return;
         }
 
-        debug!("header={:?}", req.get_header());
+        trace!("header={:?}", req.get_header());
         let mut rsp = HttpResponse::default();
         // 计算
         let wskey = req.get_header().get("Sec-WebSocket-Key");
@@ -145,38 +140,31 @@ impl<'a> WSServer<'a> {
     }
 }
 
-impl<'a> Server<'a> for WSServer<'a> {
-    fn with_addr(&mut self, addr: &'a str) -> &mut Self {
-        self._addr = addr;
-        self
-    }
-
-    fn start(&mut self) {
-        crate::tcp::server::TcpServer::default()
-            .with_addr(self._addr)
-            .start(|stream| {
-                self._status = WSStatus::Start;
-                loop {
-                    match self._status {
-                        WSStatus::Start => self._on_start(stream),
-                        WSStatus::End => break,
-                        WSStatus::Handling => {
-                            if !self._on_msg(stream) {
-                                break;
-                            }
+impl Server for WSServer {
+    fn start(&'static mut self) {
+        self._tcp_svr.start(|stream| {
+            self._status = WSStatus::Start;
+            loop {
+                match self._status {
+                    WSStatus::Start => self._on_start(stream),
+                    WSStatus::End => break,
+                    WSStatus::Handling => {
+                        if !self._on_msg(stream) {
+                            break;
                         }
                     }
-                    // 超时后关闭连接
-                    if common_time::now_drt() > self._expire {
-                        break;
-                    }
                 }
-                LoopStatus::Break
-            });
+                // 超时后关闭连接
+                if common_time::now_drt() > self._expire {
+                    break;
+                }
+            }
+            LoopStatus::Break
+        });
     }
 }
 
-fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> Option<_Frame> {
+fn _read_msg(br: &mut BufReader<&TcpStream>, server: &mut WSServer) -> Option<_Frame> {
     let mut frame = _Frame::default();
     let mut flag = false;
     loop {
@@ -205,7 +193,7 @@ fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> O
             server._status = WSStatus::End;
             return None;
         }
-        // debug!("single_frame={:?}", tmp);
+        // trace!("single_frame={:?}", tmp);
         frame._data.extend(tmp._data);
         if tmp._fin {
             break;
@@ -260,7 +248,7 @@ fn _write_msg(stream: &TcpStream, mut opcode: u8, msg: &[u8]) {
 
     // msg
     rsp.extend_from_slice(msg);
-    // debug!("rsp={:?}", rsp);
+    // trace!("rsp={:?}", rsp);
     write_msg(stream, &rsp);
 }
 
@@ -346,14 +334,14 @@ fn _read_frame(br: &mut BufReader<&TcpStream>, len: usize) -> SResult<Vec<u8>> {
     Ok(puf)
 }
 
-impl<'a> Default for WSServer<'a> {
+impl Default for WSServer {
     fn default() -> Self {
         Self {
-            _addr: "127.0.0.1:7880",
             _status: WSStatus::default(),
             _expire: now_drt() + DEFAULT_TIMEOUT,
             _timeout: DEFAULT_TIMEOUT,
             _handler: _none_handler,
+            _tcp_svr: TcpServer::default(),
         }
     }
 }

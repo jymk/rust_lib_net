@@ -36,19 +36,19 @@ pub struct HttpRequest {
 
 impl HttpRequest {
     //②
-    // head: http请求头
-    pub(crate) fn new(head: &str) -> SResult<Self> {
+    // header: http请求头
+    pub(crate) fn new(header: &str) -> SResult<Self> {
         let mut req = HttpRequest::default();
         //每次加一，此处原子操作返回的是加之前的值
         req._req_id = ACCEPT_REQ_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let first = req._header.parse_head(head);
+        let first = req._header.parse_header(header);
         if first.is_err() {
             return Err(first.unwrap_err());
         }
         let first_line = first.unwrap();
         //请求方法
-        req._method = HttpMethod::from(first_line[0]);
-        let two = first_line[1];
+        req._method = HttpMethod::from(&first_line[0]);
+        let two = first_line[1].clone();
         let index = two.find("?");
 
         //请求url和query
@@ -126,6 +126,12 @@ impl From<&str> for HttpMethod {
             "TRACE" => HttpMethod::TRACE,
             _ => HttpMethod::GET,
         }
+    }
+}
+
+impl From<&String> for HttpMethod {
+    fn from(value: &String) -> Self {
+        Self::from(value.as_str())
     }
 }
 

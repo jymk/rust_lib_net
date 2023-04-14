@@ -1,99 +1,132 @@
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::{
+    fmt::Debug,
+    io::{BufReader, BufWriter, Write},
+    net::TcpStream,
+};
 
 #[allow(unused_imports)]
-use common::{cm_log, debug, error, status::LoopStatus};
+use common::{cm_log, error, status::LoopStatus, trace};
 
-use crate::tcp::server::*;
+use crate::{
+    pb::{req::PbRequest, rsp::PbResponse},
+    tcp::server::*,
+};
 
-#[derive(Debug)]
-pub struct PbServer<'a> {
-    _addr: &'a str,
+type BeforeType = fn(&PbRequest, &mut PbResponse) -> bool;
+type AfterType = fn(&PbRequest, &mut PbResponse);
+
+pub struct PbServer {
+    _tcp_svr: TcpServer,
+    _before: BeforeType,
+    _after: AfterType,
+    _stop: bool,
 }
 
-impl<'a> PbServer<'a> {}
-
-impl<'a> Server<'a> for PbServer<'a> {
-    fn with_addr(&mut self, addr: &'a str) -> &mut Self {
-        self._addr = addr;
+impl PbServer {
+    pub fn with_before(&mut self, before: BeforeType) -> &mut Self {
+        self._before = before;
         self
     }
 
-    fn start(&mut self) {
-        TcpServer::default().with_addr(self._addr).start(|stream| {
-            let mut br = BufReader::new(stream);
+    pub fn with_after(&mut self, after: AfterType) -> &mut Self {
+        self._after = after;
+        self
+    }
 
-            let req_res = super::req::PbRequest::new(&mut br);
-            if req_res.is_err() {
-                error!("req_err={:?}", req_res.unwrap_err());
+    pub fn stop(&mut self) {
+        self._stop = true;
+    }
+
+    fn handle(&self, stream: &TcpStream) {
+        let mut br = BufReader::new(stream);
+
+        let req_res = PbRequest::new(&mut br);
+        if req_res.is_err() {
+            error!("req_err={:?}", req_res.unwrap_err());
+            return;
+        }
+        let req = req_res.unwrap();
+
+        let mut rsp = PbResponse::default();
+
+        //方法前执行
+        let check = (self._before)(&req, &mut rsp);
+        if !check {
+            (self._after)(&req, &mut rsp);
+            rsp.set_code(401);
+            _back(stream, &rsp);
+            return;
+        }
+
+        let has_func = super::route::fun(req.server_name(), req.function());
+        if has_func.is_none() {
+            rsp.set_code(404);
+            _back(stream, &rsp);
+            return;
+        }
+
+        has_func.unwrap()(&req, &mut rsp);
+
+        // 方法后执行
+        (self._after)(&req, &mut rsp);
+
+        rsp.set_code(200);
+        _back(stream, &rsp);
+    }
+}
+
+impl Server for PbServer {
+    fn start(&'static mut self) {
+        self._tcp_svr.start(|stream| {
+            if self._stop {
                 return LoopStatus::Break;
             }
-            let mut req = req_res.unwrap();
-
-            let content_len = req.get_header("Content-Length");
-            let content_len = if content_len.is_none() {
-                0
-            } else {
-                let len = content_len.unwrap().parse::<usize>();
-                if len.is_err() {
-                    error!(
-                        "content_len is err, content_len={:?}, err={:?}",
-                        content_len,
-                        len.unwrap_err()
-                    );
-                    0
-                } else {
-                    len.unwrap()
-                }
-            };
-            debug!("content_len={}", content_len);
-            let mut buf = vec![0; content_len];
-            match br.read(&mut buf) {
-                Ok(x) => debug!("read len={}, buf={:?}", x, String::from_utf8(buf.clone())),
-                Err(e) => {
-                    error!("read data err, err={:?}", e);
-                    return LoopStatus::Continue;
-                }
+            let result = std::panic::catch_unwind(|| {
+                self.handle(&stream);
+            });
+            if result.is_err() {
+                error!("servre handle err={:?}", result.unwrap_err());
             }
-            req.set_body(buf.clone());
-
-            // 回包
-            let mut bw = BufWriter::new(stream);
-            let rsp = super::rsp::PbResponse::new_rsp(buf);
-            match bw.write(&rsp) {
-                Ok(x) => debug!("write len={}", x),
-                Err(e) => error!("write err, err={:?}", e),
-            }
-
             LoopStatus::Continue
         });
     }
 }
 
-impl<'a> Default for PbServer<'a> {
+impl Default for PbServer {
     fn default() -> Self {
         Self {
-            _addr: "127.0.0.1:7881",
+            _before: _none_before,
+            _after: _none_after,
+            _stop: false,
+            _tcp_svr: TcpServer::default(),
         }
     }
 }
 
-#[test]
-fn test_pbsvr() {
-    cm_log::log_init(common::LevelFilter::Debug);
-    PbServer::default().start();
+impl Debug for PbServer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PbServer")
+            .field("_tcp_svr", &self._tcp_svr)
+            .field("_before", &"[before_func]")
+            .field("_after", &"[after_func]")
+            .field("_stop", &self._stop)
+            .finish()
+    }
 }
 
-#[test]
-fn test_send_pb() {
-    cm_log::log_init(common::LevelFilter::Debug);
+fn _none_before(_req: &PbRequest, _rsp: &mut PbResponse) -> bool {
+    true
+}
 
-    let stream = std::net::TcpStream::connect("127.0.0.1:7881").expect("connect failed");
+fn _none_after(_req: &PbRequest, _rsp: &mut PbResponse) {}
+
+fn _back(stream: &TcpStream, rsp: &PbResponse) {
+    // 回包
     let mut bw = BufWriter::new(stream);
-
-    let text = b"/senda v1.1\r\nContent-Length: 2\r\n\r\ner";
-    let rsp = super::rsp::PbResponse::new_rsp(text.to_vec());
+    let rsp = rsp.new_rsp();
     match bw.write(&rsp) {
-        Ok(x) => debug!("write len={}", x),
+        Ok(x) => trace!("write len={}", x),
         Err(e) => error!("write err, err={:?}", e),
     }
+    bw.flush().unwrap();
 }

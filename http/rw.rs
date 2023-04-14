@@ -3,7 +3,7 @@ use std::{
     net::TcpStream,
 };
 
-use common::{debug, error, status::LoopStatus};
+use common::{error, status::LoopStatus, trace};
 
 pub(crate) fn read_from_net<'a>(
     ts: &TcpStream,
@@ -35,9 +35,9 @@ pub(crate) fn write_from_cmd(stream: &TcpStream, buf: &mut String) -> usize {
         Ok(len) => len,
         Err(_) => return 0,
     };
-    debug!("size:{}", size);
+    trace!("size:{}", size);
     let wsize = write_text(stream, &buf.as_bytes()[..size]);
-    debug!("wsize:{}", wsize);
+    trace!("wsize:{}", wsize);
     wsize
 }
 pub(crate) fn write_text(mut stream: &TcpStream, buf: &[u8]) -> usize {
@@ -45,6 +45,6 @@ pub(crate) fn write_text(mut stream: &TcpStream, buf: &[u8]) -> usize {
         Ok(len) => len,
         Err(_) => return 0,
     };
-    debug!("wsize:{}", wsize);
+    trace!("wsize:{}", wsize);
     wsize
 }

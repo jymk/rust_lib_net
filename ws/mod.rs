@@ -1,7 +1,7 @@
 //! websocket
 
 #[allow(unused_imports)]
-use common::debug;
+use common::trace;
 
 // #![allow(unused)]
 pub mod frame;
@@ -15,14 +15,14 @@ fn test() {
     use crate::tcp::server::*;
     server::WSServer::default()
         .with_handler(|data| {
-            debug!("data={:?}", data);
+            trace!("data={:?}", data);
             None
         })
         .start();
     // let n = format!("{:0>4b}", 256);
-    // debug!("{:?}", u8::from_str_radix(&n, 2));
+    // trace!("{:?}", u8::from_str_radix(&n, 2));
     // let a = 655346;
     // let b = a & 0xFF;
     // let c = a >> 8;
-    // debug!("{:?}", (b, c));
+    // trace!("{:?}", (b, c));
 }

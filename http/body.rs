@@ -73,7 +73,7 @@ impl Body {
 
         //若无Transfer-Encoding则读取content_length
         let mut content_length = header.get_content_length();
-        // debug!("content_length={:?}", content_length);
+        // trace!("content_length={:?}", content_length);
         if content_length.is_none() {
             //no content
             if method == HttpMethod::POST {
@@ -108,7 +108,7 @@ impl Body {
     pub(crate) fn analyze_body(&self, header: &Header) -> BTreeMap<String, String> {
         //非文件
         let ct = header.get_content_type();
-        // debug!("ct={:?}", ct);
+        // trace!("ct={:?}", ct);
         if ct.is_none() {
             return BTreeMap::default();
         }
@@ -134,7 +134,7 @@ impl Body {
     pub(crate) fn analyze_form(&self, header: &Header) -> BTreeMap<String, String> {
         let mut params = BTreeMap::default();
         let boundary = header.get_boundary();
-        // debug!("boundary={:?}", boundary);
+        // trace!("boundary={:?}", boundary);
         if boundary.is_none() {
             //无boundary直接返回
             return params;
@@ -200,22 +200,22 @@ fn _read_chunked(br: &mut BufReader<&TcpStream>) -> LoopStatus<Vec<u8>> {
         //读取下一行数据长度
         let mut puf = Vec::default();
         let len = br.read_until(b'\n', &mut puf);
-        // debug!("linelen={:?}", len);
+        // trace!("linelen={:?}", len);
         if len.is_err() {
             return res;
         }
 
-        // debug!("puflen={}", puf.len());
+        // trace!("puflen={}", puf.len());
         // common::u8s_to_chars(&puf);
         let num = String::from_utf8(puf);
         if num.is_err() {
-            // debug!("puf={:?}, err={:?}", puf, num);
+            // trace!("puf={:?}, err={:?}", puf, num);
             return res;
         }
         let num = num.unwrap();
         let num = num.trim().trim_matches('\0');
 
-        // debug!("num={}:[{}]", num.is_empty(), num);
+        // trace!("num={}:[{}]", num.is_empty(), num);
         //如果为空白行，继续下一行，除非行数据长度为0
         if num.is_empty() {
             continue;
@@ -226,7 +226,7 @@ fn _read_chunked(br: &mut BufReader<&TcpStream>) -> LoopStatus<Vec<u8>> {
             return res;
         }
 
-        // debug!("len={:?}", len);
+        // trace!("len={:?}", len);
 
         //根据数据长度读取数据
         let size = len.unwrap();
@@ -240,7 +240,7 @@ fn _read_chunked(br: &mut BufReader<&TcpStream>) -> LoopStatus<Vec<u8>> {
         // if size == 2 && buf == [13, 10] {
         //     continue;
         // }
-        // debug!("size={:?}", size);
+        // trace!("size={:?}", size);
 
         //若读完最后一行，跳出循环
         if size == 0 {
