@@ -15,6 +15,7 @@ use crate::{
 type BeforeType = fn(&PbRequest, &mut PbResponse) -> bool;
 type AfterType = fn(&PbRequest, &mut PbResponse);
 
+#[derive(Clone)]
 pub struct PbServer {
     _tcp_svr: TcpServer,
     _before: BeforeType,
@@ -76,13 +77,14 @@ impl PbServer {
 }
 
 impl Server for PbServer {
-    fn start(&'static mut self) {
-        self._tcp_svr.start(|stream| {
-            if self._stop {
+    fn start(self) {
+        let this = self.clone();
+        self._tcp_svr.start(move |stream| {
+            if this._stop {
                 return LoopStatus::Break;
             }
             let result = std::panic::catch_unwind(|| {
-                self.handle(&stream);
+                this.handle(&stream);
             });
             if result.is_err() {
                 error!("servre handle err={:?}", result.unwrap_err());

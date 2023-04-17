@@ -7,16 +7,18 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct TcpServer {
     _addr: &'static str,
-    // 线程数量，默认1
+    // 线程数量，默认1，必须大于0
     _thread_num: usize,
 }
 
 impl TcpServer {
+    #[allow(unused)]
     pub fn with_addr(&mut self, addr: &'static str) -> &mut Self {
         self._addr = addr;
         self
     }
 
+    #[allow(unused)]
     pub fn with_thread_num(&mut self, thread_num: usize) -> &mut Self {
         self._thread_num = thread_num;
         self
@@ -66,9 +68,9 @@ fn _none_handle(_stream: &TcpStream) -> LoopStatus<bool> {
     LoopStatus::Break
 }
 
-pub trait Server: 'static {
+pub trait Server: 'static + Clone {
     /// 启动服务
-    fn start(&'static mut self);
+    fn start(self);
 }
 
 #[test]

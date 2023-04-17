@@ -141,21 +141,22 @@ impl WSServer {
 }
 
 impl Server for WSServer {
-    fn start(&'static mut self) {
-        self._tcp_svr.start(|stream| {
-            self._status = WSStatus::Start;
+    fn start(self) {
+        let mut this = self.clone();
+        self._tcp_svr.start(move |stream| {
+            this._status = WSStatus::Start;
             loop {
-                match self._status {
-                    WSStatus::Start => self._on_start(stream),
+                match this._status {
+                    WSStatus::Start => this._on_start(stream),
                     WSStatus::End => break,
                     WSStatus::Handling => {
-                        if !self._on_msg(stream) {
+                        if !this._on_msg(stream) {
                             break;
                         }
                     }
                 }
                 // 超时后关闭连接
-                if common_time::now_drt() > self._expire {
+                if common_time::now_drt() > this._expire {
                     break;
                 }
             }

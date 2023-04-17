@@ -49,13 +49,14 @@ impl HttpServer {
     }
 
     /// 可指定回包状态码服务启动
-    pub fn start_base(&'static self, suc_code: StatusCode) {
+    pub fn start_base(&self, suc_code: StatusCode) {
+        let this = self.clone();
         self._tcp_svr.start(move |stream| {
-            if self._stop {
+            if this._stop {
                 return LoopStatus::Break;
             }
             let result = std::panic::catch_unwind(|| {
-                handler_with_route(&stream, self, suc_code);
+                handler_with_route(&stream, &this, suc_code);
             });
             if result.is_err() {
                 error!("servre handle err={:?}", result.unwrap_err());
@@ -70,7 +71,7 @@ impl HttpServer {
 }
 
 impl Server for HttpServer {
-    fn start(&'static mut self) {
+    fn start(self) {
         self.start_base(StatusCode::Ok)
     }
 }
