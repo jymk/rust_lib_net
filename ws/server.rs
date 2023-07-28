@@ -128,6 +128,7 @@ impl WSServer {
             rsp.set_header("Connection", "Upgrade");
             rsp.set_header("Upgrade", "websocket");
         }
+		trace!("header={:?}", rsp);
 
         self._status = WSStatus::Handling;
         // 回包
