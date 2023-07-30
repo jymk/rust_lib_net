@@ -31,7 +31,7 @@ static DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 /// 若opcode传值大于2^4 -1 或者 回包为None，则置为0xa(pongs)
 #[derive(Clone)]
 pub struct WSServer {
-    _tcp_svr: TcpServer,
+    pub tcp_svr: TcpServer,
     _expire: Duration,
     _timeout: Duration,
     _status: WSStatus,
@@ -128,7 +128,7 @@ impl WSServer {
             rsp.set_header("Connection", "Upgrade");
             rsp.set_header("Upgrade", "websocket");
         }
-		trace!("header={:?}", rsp);
+        trace!("header={:?}", rsp);
 
         self._status = WSStatus::Handling;
         // 回包
@@ -144,7 +144,7 @@ impl WSServer {
 impl Server for WSServer {
     fn start(self) {
         let mut this = self.clone();
-        self._tcp_svr.start(move |stream| {
+        self.tcp_svr.start(move |stream| {
             this._status = WSStatus::Start;
             loop {
                 match this._status {
@@ -343,7 +343,7 @@ impl Default for WSServer {
             _expire: now_drt() + DEFAULT_TIMEOUT,
             _timeout: DEFAULT_TIMEOUT,
             _handler: _none_handler,
-            _tcp_svr: TcpServer::default(),
+            tcp_svr: TcpServer::default(),
         }
     }
 }

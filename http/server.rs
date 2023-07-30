@@ -23,7 +23,7 @@ pub type AfterType = fn(&HttpRequest, &mut HttpResponse);
 #[derive(Clone)]
 pub struct HttpServer {
     // 绑定地址(包括端口)
-    _tcp_svr: TcpServer,
+    pub tcp_svr: TcpServer,
     _header: HeaderType,
     // 方法前执行
     _before: BeforeType,
@@ -51,7 +51,7 @@ impl HttpServer {
     /// 可指定回包状态码服务启动
     pub fn start_base(&self, suc_code: StatusCode) {
         let this = self.clone();
-        self._tcp_svr.start(move |stream| {
+        self.tcp_svr.start(move |stream| {
             if this._stop {
                 return LoopStatus::Break;
             }
@@ -83,7 +83,7 @@ impl Default for HttpServer {
             _after: _none_after,
             _header: HeaderType::default(),
             _stop: false,
-            _tcp_svr: TcpServer::default(),
+            tcp_svr: TcpServer::default(),
         }
     }
 }
@@ -91,7 +91,7 @@ impl Default for HttpServer {
 impl Debug for HttpServer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HttpServer")
-            .field("_tcp_svr", &self._tcp_svr)
+            .field("_tcp_svr", &self.tcp_svr)
             .field("_header", &self._header)
             .field("_before", &"[before_func]")
             .field("_after", &"[after_func]")

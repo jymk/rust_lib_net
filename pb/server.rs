@@ -17,7 +17,7 @@ type AfterType = fn(&PbRequest, &mut PbResponse);
 
 #[derive(Clone)]
 pub struct PbServer {
-    _tcp_svr: TcpServer,
+    pub tcp_svr: TcpServer,
     _before: BeforeType,
     _after: AfterType,
     _stop: bool,
@@ -79,7 +79,7 @@ impl PbServer {
 impl Server for PbServer {
     fn start(self) {
         let this = self.clone();
-        self._tcp_svr.start(move |stream| {
+        self.tcp_svr.start(move |stream| {
             if this._stop {
                 return LoopStatus::Break;
             }
@@ -100,7 +100,7 @@ impl Default for PbServer {
             _before: _none_before,
             _after: _none_after,
             _stop: false,
-            _tcp_svr: TcpServer::default(),
+            tcp_svr: TcpServer::default(),
         }
     }
 }
@@ -108,7 +108,7 @@ impl Default for PbServer {
 impl Debug for PbServer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PbServer")
-            .field("_tcp_svr", &self._tcp_svr)
+            .field("_tcp_svr", &self.tcp_svr)
             .field("_before", &"[before_func]")
             .field("_after", &"[after_func]")
             .field("_stop", &self._stop)
