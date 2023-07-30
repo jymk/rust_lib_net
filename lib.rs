@@ -4,7 +4,7 @@ mod im_client;
 mod im_server;
 pub mod pb;
 pub mod route;
-mod tcp;
+pub mod tcp;
 pub mod ws;
 
 #[allow(unused_imports)]
@@ -20,8 +20,8 @@ pub use http::{
     Body as HttpBody,
 };
 
-pub use ws::server::WSServer;
 pub use tcp::*;
+pub use ws::server::WSServer;
 
 #[test]
 fn test() {
