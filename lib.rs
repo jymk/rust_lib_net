@@ -21,6 +21,7 @@ pub use http::{
 };
 
 pub use ws::server::WSServer;
+pub use tcp::*;
 
 #[test]
 fn test() {
