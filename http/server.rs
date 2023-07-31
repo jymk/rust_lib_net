@@ -24,30 +24,15 @@ pub type AfterType = fn(&HttpRequest, &mut HttpResponse);
 pub struct HttpServer {
     // 绑定地址(包括端口)
     pub tcp_svr: TcpServer,
-    _header: HeaderType,
+    pub header: HeaderType,
     // 方法前执行
-    _before: BeforeType,
+    pub before: BeforeType,
     // 方法后执行
-    _after: AfterType,
+    pub after: AfterType,
     _stop: bool,
 }
 
 impl HttpServer {
-    pub fn with_before(&mut self, before: BeforeType) -> &mut Self {
-        self._before = before;
-        self
-    }
-
-    pub fn with_after(&mut self, after: AfterType) -> &mut Self {
-        self._after = after;
-        self
-    }
-
-    pub fn with_header(&mut self, header: HeaderType) -> &mut Self {
-        self._header = header;
-        self
-    }
-
     /// 可指定回包状态码服务启动
     pub fn start_base(&self, suc_code: StatusCode) {
         let this = self.clone();
@@ -79,9 +64,9 @@ impl Server for HttpServer {
 impl Default for HttpServer {
     fn default() -> Self {
         Self {
-            _before: _none_before,
-            _after: _none_after,
-            _header: HeaderType::default(),
+            before: _none_before,
+            after: _none_after,
+            header: HeaderType::default(),
             _stop: false,
             tcp_svr: TcpServer::default(),
         }
@@ -92,9 +77,9 @@ impl Debug for HttpServer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HttpServer")
             .field("_tcp_svr", &self.tcp_svr)
-            .field("_header", &self._header)
-            .field("_before", &"[before_func]")
-            .field("_after", &"[after_func]")
+            .field("header", &self.header)
+            .field("before", &"[before_func]")
+            .field("after", &"[after_func]")
             .field("_stop", &self._stop)
             .finish()
     }
@@ -122,9 +107,9 @@ fn handler_with_route(stream: &TcpStream, server: &HttpServer, suc_code: StatusC
 
     let mut rsp = HttpResponse::default();
     //方法前执行
-    let check = (server._before)(&req, &mut rsp);
+    let check = (server.before)(&req, &mut rsp);
     if !check {
-        (server._after)(&req, &mut rsp);
+        (server.after)(&req, &mut rsp);
         back(stream, StatusCode::Unauthorized, rsp.get_body().to_string());
         return;
     }
@@ -143,9 +128,9 @@ fn handler_with_route(stream: &TcpStream, server: &HttpServer, suc_code: StatusC
     func.unwrap()(&req, &mut rsp);
 
     //方法后执行
-    (server._after)(&req, &mut rsp);
+    (server.after)(&req, &mut rsp);
 
-    rsp.headers_mut().append(&mut server._header.clone());
+    rsp.headers_mut().append(&mut server.header.clone());
     //回包
     back_with_header(
         stream,

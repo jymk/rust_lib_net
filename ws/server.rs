@@ -35,15 +35,10 @@ pub struct WSServer {
     _expire: Duration,
     _timeout: Duration,
     _status: WSStatus,
-    _handler: Handler,
+    pub handler: Handler,
 }
 
 impl WSServer {
-    pub fn with_handler(&mut self, handler: Handler) -> &mut Self {
-        self._handler = handler;
-        self
-    }
-
     pub fn with_timeout(&mut self, timeout: Duration) -> &mut Self {
         self._timeout = timeout;
         self._update_expire_with_timeout(timeout);
@@ -77,7 +72,7 @@ impl WSServer {
             _ => {}
         }
 
-        let rsp = (self._handler)(&frame._data);
+        let rsp = (self.handler)(&frame._data);
         let mut opcode = 0x1;
         let rsp_msg;
         if rsp.is_none() {
@@ -342,7 +337,7 @@ impl Default for WSServer {
             _status: WSStatus::default(),
             _expire: now_drt() + DEFAULT_TIMEOUT,
             _timeout: DEFAULT_TIMEOUT,
-            _handler: _none_handler,
+            handler: _none_handler,
             tcp_svr: TcpServer::default(),
         }
     }

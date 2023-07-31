@@ -6,31 +6,19 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub struct TcpServer {
-    _addr: &'static str,
+    pub addr: &'static str,
     // 线程数量，默认1，必须大于0
-    _thread_num: usize,
+    pub thread_num: usize,
 }
 
 impl TcpServer {
-    #[allow(unused)]
-    pub fn with_addr(&mut self, addr: &'static str) -> &mut Self {
-        self._addr = addr;
-        self
-    }
-
-    #[allow(unused)]
-    pub fn with_thread_num(&mut self, thread_num: usize) -> &mut Self {
-        self._thread_num = thread_num;
-        self
-    }
-
     pub fn start<F>(&self, handler: F)
     where
         F: FnMut(&TcpStream) -> LoopStatus<bool> + std::marker::Send + 'static,
     {
-        let listener = TcpListener::bind(self._addr).expect("bind failed");
+        let listener = TcpListener::bind(self.addr).expect("bind failed");
         let stop_flag = Arc::new(Mutex::new(false));
-        let pool = super::worker::ThreadPool::new(self._thread_num);
+        let pool = super::worker::ThreadPool::new(self.thread_num);
 
         let handler = Arc::new(Mutex::new(handler));
 
@@ -58,8 +46,8 @@ impl TcpServer {
 impl Default for TcpServer {
     fn default() -> Self {
         Self {
-            _addr: "127.0.0.1:80",
-            _thread_num: 1,
+            addr: "127.0.0.1:80",
+            thread_num: 1,
         }
     }
 }
@@ -75,7 +63,7 @@ pub trait Server: 'static + Clone {
 
 #[test]
 fn test_tcp_server() {
-    TcpServer::default()
-        .with_addr("127.0.0.1:7878")
-        .start(|_stream| LoopStatus::Break)
+    let mut svr = TcpServer::default();
+    svr.addr = "localhost:80";
+    svr.start(|_stream| LoopStatus::Break)
 }

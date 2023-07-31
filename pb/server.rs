@@ -18,22 +18,12 @@ type AfterType = fn(&PbRequest, &mut PbResponse);
 #[derive(Clone)]
 pub struct PbServer {
     pub tcp_svr: TcpServer,
-    _before: BeforeType,
-    _after: AfterType,
+    pub before: BeforeType,
+    pub after: AfterType,
     _stop: bool,
 }
 
 impl PbServer {
-    pub fn with_before(&mut self, before: BeforeType) -> &mut Self {
-        self._before = before;
-        self
-    }
-
-    pub fn with_after(&mut self, after: AfterType) -> &mut Self {
-        self._after = after;
-        self
-    }
-
     pub fn stop(&mut self) {
         self._stop = true;
     }
@@ -51,9 +41,9 @@ impl PbServer {
         let mut rsp = PbResponse::default();
 
         //方法前执行
-        let check = (self._before)(&req, &mut rsp);
+        let check = (self.before)(&req, &mut rsp);
         if !check {
-            (self._after)(&req, &mut rsp);
+            (self.after)(&req, &mut rsp);
             rsp.set_code(401);
             _back(stream, &rsp);
             return;
@@ -69,7 +59,7 @@ impl PbServer {
         has_func.unwrap()(&req, &mut rsp);
 
         // 方法后执行
-        (self._after)(&req, &mut rsp);
+        (self.after)(&req, &mut rsp);
 
         rsp.set_code(200);
         _back(stream, &rsp);
@@ -97,8 +87,8 @@ impl Server for PbServer {
 impl Default for PbServer {
     fn default() -> Self {
         Self {
-            _before: _none_before,
-            _after: _none_after,
+            before: _none_before,
+            after: _none_after,
             _stop: false,
             tcp_svr: TcpServer::default(),
         }
@@ -109,8 +99,8 @@ impl Debug for PbServer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PbServer")
             .field("_tcp_svr", &self.tcp_svr)
-            .field("_before", &"[before_func]")
-            .field("_after", &"[after_func]")
+            .field("before", &"[before_func]")
+            .field("after", &"[after_func]")
             .field("_stop", &self._stop)
             .finish()
     }
