@@ -69,6 +69,10 @@ pub fn add_post_route(url: &'static str, func: ValType) {
         .write()
         .unwrap()
         .insert(HttpRoute::new(HttpMethod::POST, url), func);
+    _get_route_instance()
+        .write()
+        .unwrap()
+        .insert(HttpRoute::new(HttpMethod::OPTIONS, url), |_, _| {});
 }
 
 #[allow(unused)]
