@@ -176,15 +176,26 @@ fn _none_after(_req: &HttpRequest, _rsp: &mut HttpResponse) {}
 
 #[test]
 fn test() {
-    cm_log::log_init(common::LevelFilter::Debug);
+    cm_log::log_init(common::LevelFilter::Trace);
 
     super::route::add_get_route("/", |_req, rsp| {
         rsp.set_body("Get<h1>Hello World!</h1>");
     });
-    super::route::add_post_route("/", |req, rsp| {
-        trace!("body={:?}", req.get_body());
+    super::route::add_post_route("/tools/img-merge", |req, rsp| {
+        trace!(
+            "body={:?}",
+            &String::from_utf8_lossy(&req.get_body().get_u8s())[..9000]
+        );
         rsp.set_body("Post<h1>Hello World!</h1>");
     });
     super::route::print_routes();
-    HttpServer::default().start();
+    let mut svr = HttpServer::default();
+    let mut tcp_svr = TcpServer::default();
+    tcp_svr.addr = "127.0.0.1:7879";
+    svr.tcp_svr = tcp_svr;
+    svr.after = |_, rsp| {
+        rsp.set_header("Access-Control-Allow-Origin", "*");
+        rsp.set_header("Access-Control-Allow-Headers", "*");
+    };
+    svr.start();
 }
