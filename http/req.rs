@@ -93,7 +93,7 @@ impl HttpRequest {
     pub fn get_header(&self) -> &Header {
         &self._header
     }
-    pub fn analyze_form(&self) -> BTreeMap<String, String> {
+    pub fn analyze_form(&self) -> BTreeMap<String, Vec<u8>> {
         self.get_body().analyze_form(&self._header)
     }
     pub fn analyze_param(&self) -> BTreeMap<String, String> {
