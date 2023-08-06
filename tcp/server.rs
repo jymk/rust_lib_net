@@ -25,9 +25,6 @@ impl TcpServer {
         // bind success
         for res_stream in listener.incoming() {
             // new request...
-            if *stop_flag.lock().unwrap() {
-                break;
-            }
             let stop_flag_clone = Arc::clone(&stop_flag);
             let handler_clone = handler.clone();
             match res_stream {
@@ -38,6 +35,9 @@ impl TcpServer {
                     });
                 }
                 Err(e) => error!("e={:?}", e),
+            }
+            if *stop_flag.lock().unwrap() {
+                break;
             }
         }
     }
