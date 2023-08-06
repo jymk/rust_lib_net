@@ -136,6 +136,7 @@ impl Body {
         let boundary = header.get_boundary();
         // trace!("boundary={:?}", boundary);
         if boundary.is_none() {
+            error!("no boundary");
             //无boundary直接返回
             return params;
         }

@@ -184,8 +184,9 @@ fn test() {
     super::route::add_post_route("/tools/img-merge", |req, rsp| {
         trace!(
             "body={:?}",
-            &String::from_utf8_lossy(&req.get_body().get_u8s())[..9000]
+            &String::from_utf8_lossy(&req.get_body().get_u8s())
         );
+        trace!("bodymap={:?}", req.analyze_form());
         rsp.set_body("Post<h1>Hello World!</h1>");
     });
     super::route::print_routes();
