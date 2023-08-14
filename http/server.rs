@@ -186,7 +186,7 @@ fn test() {
             "body={:?}",
             &String::from_utf8_lossy(&req.get_body().get_u8s())
         );
-        // trace!("bodymap={:?}", req.analyze_form());
+        trace!("bodymap={:?}", req.analyze_form());
         rsp.set_body("Post<h1>Hello World!</h1>");
     });
     super::route::print_routes();
