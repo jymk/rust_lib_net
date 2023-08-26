@@ -25,7 +25,7 @@ svr.start();
 ```
 #### Config And Route  
 have to config before server starts  
-route only support get and post method, not support path with param，call lib_net::add_get_route or lib_net::add_post_route  
+call lib_net::add_get_route or lib_net::add_post_route  
 
 
 ## WebsocketServer  
