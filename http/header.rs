@@ -4,7 +4,8 @@ use std::{
     net::TcpStream,
 };
 
-use common::{errs::SResult, strings, time};
+#[allow(unused_imports)]
+use common::{error, errs::SResult, strings, time, trace};
 
 use super::errs;
 
@@ -47,7 +48,7 @@ impl Header {
     }
 
     pub fn set(&mut self, key: &str, val: &str) {
-        let key = strings::extract_normal_lower_char(key);
+        let key = strings::trim_and_lower(key);
         let mut val = val.trim().to_string();
         // 若key为content-type的form-data，需获取val的boundary
         if &key == "content-type" {
@@ -70,7 +71,7 @@ impl Header {
 
     pub fn get(&self, key: &str) -> Option<&String> {
         self._inner
-            .get(&common::strings::extract_normal_lower_char(key))
+            .get(&common::strings::trim_and_lower(key))
             .clone()
     }
 
@@ -78,15 +79,19 @@ impl Header {
         self._boundary.clone()
     }
 
-    pub(crate) fn parse_head<'a>(&mut self, head: &'a str) -> SResult<Vec<&'a str>> {
-        let lines = head.split("\r\n").collect::<Vec<_>>();
+    pub(crate) fn parse_header(&mut self, header: &str) -> SResult<Vec<String>> {
+        trace!("header={}", header);
+        let lines = header.split("\r\n").collect::<Vec<_>>();
         //第一行字符串
         let first = match lines.get(0) {
             Some(x) => *x,
             None => return errs::err_format(),
         };
         //第一行数据
-        let first_line = first.split_ascii_whitespace().collect::<Vec<_>>();
+        let first_line = first
+            .split_ascii_whitespace()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>();
         if first_line.len() < 3 {
             return errs::err_format();
         }
@@ -134,20 +139,20 @@ pub(crate) fn set_header<'a>(
     key: &str,
     val: &str,
 ) -> &'a mut HeaderType {
-    let key = strings::extract_normal_lower_char(key);
+    let key = strings::trim_and_lower(key);
     let val = val.trim().to_string();
     header.insert(key, val);
     header
 }
 
 //① req/rsp
-pub(crate) fn read_head(br: &mut BufReader<&TcpStream>) -> String {
+pub(crate) fn read_header(br: &mut BufReader<&TcpStream>) -> String {
     let mut buf = String::default();
     loop {
         let mut puf = String::default();
         if let Ok(_len) = br.read_line(&mut puf) {
-            // println!("puf={:?}", puf);
-            if puf.is_empty() || puf == "\r\n" {
+            // trace!("puf={:?}", puf);
+            if puf.is_empty() || puf.as_str() == "\r\n" {
                 break;
             }
             buf.push_str(&puf);

@@ -20,7 +20,7 @@ pub(super) struct _Frame {
     // 1位，用于表示PayloadData是否经过掩码处理，客户端发出的数据帧需要进行掩码处理，所以此位1。
     pub(super) _mask: bool,
     // Payload length===x，如果
-    //          如果x值在0-125，则后面2个字节形成的16位无符号整型数的值是payload的真实长度。
+    //          如果x值在0-125，则payload即为真实长度。
     //         如果x值是126，则后面2个字节形成的16位无符号整型数的值是payload的真实长度。
     //          如果x值是127，则后面8个字节形成的64位无符号整型数的值是payload的真实长度。
     pub(super) _payload_len: u64,

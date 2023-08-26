@@ -11,7 +11,14 @@ use sha1::{Digest, Sha1};
 use super::frame::_Frame;
 use crate::http::server::{back_with_header, write_msg};
 use crate::http::{req::*, rsp::*};
-use common::{errs::SResult, status::LoopStatus, time as common_time};
+use crate::tcp::server::*;
+use common::{
+    error,
+    errs::SResult,
+    status::LoopStatus,
+    time::{self as common_time, now_drt},
+    trace,
+};
 
 type Handler = fn(&BytesMut) -> Option<Vec<u8>>;
 
@@ -24,69 +31,28 @@ static DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 /// 心跳时不处理消息
 /// 若opcode传值大于2^4 -1 或者 回包为None，则置为0xa(pongs)
 #[derive(Clone)]
-pub struct WSServer<'a> {
-    _addr: &'a str,
-    _expire: BTreeMap<String, Duration>,
+pub struct WSServer {
+    pub tcp_svr: TcpServer,
+    _expire: Duration,
     _timeout: Duration,
     _status: WSStatus,
-    _handler: Handler,
+    pub handler: Handler,
 }
 
-impl<'a> WSServer<'a> {
-    pub fn with_addr(&mut self, addr: &'a str) -> &mut Self {
-        self._addr = addr;
-        self
-    }
-
-    pub fn with_handler(&mut self, handler: Handler) -> &mut Self {
-        self._handler = handler;
-        self
-    }
-
-    pub fn with_timeout(&mut self, key: &String, timeout: Duration) -> &mut Self {
+impl WSServer {
+    pub fn with_timeout(&mut self, timeout: Duration) -> &mut Self {
         self._timeout = timeout;
-        self._update_expire_with_timeout(key, timeout);
+        self._update_expire_with_timeout(timeout);
         self
     }
 
-    /// 根据timeout更新expire
-    fn _update_expire_with_timeout(&mut self, key: &str, timeout: Duration) {
-        self._expire
-            .insert(key.to_string(), common_time::now_drt() + timeout);
+    fn _update_expire_with_timeout(&mut self, timeout: Duration) {
+        self._expire = common_time::now_drt() + timeout;
     }
 
-    pub fn start(&mut self, key: &str) {
-        crate::tcp::server::TcpServer::default()
-            .with_addr(self._addr)
-            .start(|stream| {
-                self._status = WSStatus::Start;
-                loop {
-                    // 超时后关闭连接
-                    let mut expire = self._expire.get(key);
-                    if expire.is_none() {
-                        expire = Some(&DEFAULT_TIMEOUT);
-                    }
-                    let expire = expire.unwrap();
-                    if common_time::now_drt() > *expire {
-                        break;
-                    }
-                    match self._status {
-                        WSStatus::Start => self._on_start(stream),
-                        WSStatus::End => break,
-                        WSStatus::Handling => {
-                            if !self._on_msg(key, stream) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                LoopStatus::Break
-            });
-    }
-
-    fn _on_msg(&mut self, key: &str, stream: &TcpStream) -> bool {
+    fn _on_msg(&mut self, stream: &TcpStream) -> bool {
         // 接收到消息后更新expire
-        self._update_expire_with_timeout(key, self._timeout);
+        self._update_expire_with_timeout(self._timeout);
 
         let mut br = BufReader::new(stream);
 
@@ -97,7 +63,7 @@ impl<'a> WSServer<'a> {
         let frame = frame.unwrap();
         match frame._opcode {
             0x8 => {
-                return true;
+                return false;
             }
             0x9 => {
                 _write_msg(stream, 0xa, b"");
@@ -106,7 +72,7 @@ impl<'a> WSServer<'a> {
             _ => {}
         }
 
-        let rsp = (self._handler)(&frame._data);
+        let rsp = (self.handler)(&frame._data);
         let mut opcode = 0x1;
         let rsp_msg;
         if rsp.is_none() {
@@ -115,21 +81,15 @@ impl<'a> WSServer<'a> {
         } else {
             rsp_msg = rsp.unwrap();
         }
-        _write_msg(stream, opcode, &rsp_msg);
-
-        // println!("收到消息");
         // 向前端写数据
-        // let mut rsp_msg = Vec::default();
-        // rsp_msg.extend_from_slice("收到消息: ".as_bytes());
-        // rsp_msg.append(&mut frame._data.to_vec());
-        // _write_msg(stream, 0x1, &rsp_msg);
+        _write_msg(stream, opcode, &rsp_msg);
         true
     }
 
     fn _on_start(&mut self, stream: &TcpStream) {
         let mut br = BufReader::new(stream);
-        let buf = crate::http::header::read_head(&mut br);
-        // println!("\nreq={:?}", buf);
+        let buf = crate::http::header::read_header(&mut br);
+        // trace!("\nreq={:?}", buf);
         //读取header
         let req = HttpRequest::new(&buf);
         if req.is_err() {
@@ -146,7 +106,7 @@ impl<'a> WSServer<'a> {
             return;
         }
 
-        println!("header={:?}", req.get_header());
+        trace!("header={:?}", req.get_header());
         let mut rsp = HttpResponse::default();
         // 计算
         let wskey = req.get_header().get("Sec-WebSocket-Key");
@@ -163,6 +123,7 @@ impl<'a> WSServer<'a> {
             rsp.set_header("Connection", "Upgrade");
             rsp.set_header("Upgrade", "websocket");
         }
+        trace!("header={:?}", rsp);
 
         self._status = WSStatus::Handling;
         // 回包
@@ -175,14 +136,39 @@ impl<'a> WSServer<'a> {
     }
 }
 
-fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> Option<_Frame> {
+impl Server for WSServer {
+    fn start(self) {
+        let mut this = self.clone();
+        self.tcp_svr.start(move |stream| {
+            this._status = WSStatus::Start;
+            loop {
+                match this._status {
+                    WSStatus::Start => this._on_start(stream),
+                    WSStatus::End => break,
+                    WSStatus::Handling => {
+                        if !this._on_msg(stream) {
+                            break;
+                        }
+                    }
+                }
+                // 超时后关闭连接
+                if common_time::now_drt() > this._expire {
+                    break;
+                }
+            }
+            LoopStatus::Break
+        });
+    }
+}
+
+fn _read_msg(br: &mut BufReader<&TcpStream>, server: &mut WSServer) -> Option<_Frame> {
     let mut frame = _Frame::default();
     let mut flag = false;
     loop {
         let mut tmp = _Frame::default();
         let res = _read_head(br, &mut tmp);
         if res.is_err() {
-            eprintln!("_read_head: err={:?}", res.unwrap_err());
+            error!("_read_head: err={:?}", res.unwrap_err());
             server._status = WSStatus::End;
             return None;
         }
@@ -200,11 +186,11 @@ fn _read_msg<'a>(br: &mut BufReader<&TcpStream>, server: &mut WSServer<'a>) -> O
         }
         let res = _read_data(br, &mut tmp);
         if res.is_err() {
-            eprintln!("_read_data: err={:?}", res.unwrap_err());
+            error!("_read_data: err={:?}", res.unwrap_err());
             server._status = WSStatus::End;
             return None;
         }
-        // println!("single_frame={:?}", tmp);
+        // trace!("single_frame={:?}", tmp);
         frame._data.extend(tmp._data);
         if tmp._fin {
             break;
@@ -259,7 +245,7 @@ fn _write_msg(stream: &TcpStream, mut opcode: u8, msg: &[u8]) {
 
     // msg
     rsp.extend_from_slice(msg);
-    // println!("rsp={:?}", rsp);
+    // trace!("rsp={:?}", rsp);
     write_msg(stream, &rsp);
 }
 
@@ -340,19 +326,19 @@ fn _read_frame(br: &mut BufReader<&TcpStream>, len: usize) -> SResult<Vec<u8>> {
     let mut puf = vec![0; len];
     let res = br.read(&mut puf);
     if res.is_err() {
-        return common::errs::sresult_from_err(res.unwrap_err());
+        return common::errs::to_err(res.unwrap_err());
     }
     Ok(puf)
 }
 
-impl<'a> Default for WSServer<'a> {
+impl Default for WSServer {
     fn default() -> Self {
         Self {
-            _addr: "127.0.0.1:7880",
             _status: WSStatus::default(),
-            _expire: BTreeMap::default(),
+            _expire: now_drt() + DEFAULT_TIMEOUT,
             _timeout: DEFAULT_TIMEOUT,
-            _handler: _none_handler,
+            handler: _none_handler,
+            tcp_svr: TcpServer::default(),
         }
     }
 }

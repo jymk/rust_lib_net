@@ -4,7 +4,10 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use common::strings::str_to_static;
+#[allow(unused_imports)]
+use common::{cm_log, trace};
+
+use crate::route::Route;
 
 use super::{
     req::{HttpMethod, HttpRequest},
@@ -22,73 +25,54 @@ fn _get_route_instance() -> Arc<RwLock<RouteMapType>> {
 
 /// 执行函数
 type ValType = fn(&HttpRequest, &mut HttpResponse);
+/// 路由缓存
+type RouteMapType = BTreeMap<HttpRoute, ValType>;
 
-type RouteMapType = BTreeMap<Route, ValType>;
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct HttpRoute(Route, HttpMethod);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Route {
-    _method: HttpMethod,
-    _url: &'static str,
-}
-
-impl Route {
+impl HttpRoute {
     pub(crate) fn new(method: HttpMethod, url: &str) -> Self {
-        Self {
-            _method: method,
-            _url: str_to_static(url.to_string()),
-        }
-    }
-
-    pub(crate) fn new2(method: HttpMethod, url: &'static str) -> Self {
-        Self {
-            _method: method,
-            _url: url,
-        }
+        Self(Route::new(url), method)
     }
 }
 
-pub(crate) fn fun(method: HttpMethod, url: &str) -> ValType {
+impl Debug for HttpRoute {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("HttpRoute")
+            .field(&self.0.get_url())
+            .field(&self.1)
+            .finish()
+    }
+}
+
+pub(crate) fn fun(method: HttpMethod, url: &str) -> Option<ValType> {
     let instance = _get_route_instance();
     let r = instance.read().unwrap();
-    let fun = r.get(&Route::new(method, url));
-    if fun.is_none() {
-        return _none_fun;
+    let func = r.get(&HttpRoute::new(method, url));
+    if func.is_none() {
+        return None;
     }
-    *fun.unwrap()
+    Some(*func.unwrap())
 }
 
-pub(crate) fn no_has_fun(method: HttpMethod, url: &str) -> bool {
-    let instance = _get_route_instance();
-    let r = instance.read().unwrap();
-    let fun = r.get(&Route::new(method, url));
-    // print_routes();
-    // println!("cur_method={:?}, cur_url={}", method, url);
-    fun.is_none()
-}
-
-fn _none_fun(_: &HttpRequest, _: &mut HttpResponse) {}
-
-impl Default for Route {
-    fn default() -> Self {
-        Self {
-            _method: HttpMethod::default(),
-            _url: "",
-        }
-    }
-}
-
-pub fn add_get_route(url: &'static str, fun: ValType) {
+/// 下面两个函数限制HttpMethod
+pub fn add_get_route(url: &'static str, func: ValType) {
     _get_route_instance()
         .write()
         .unwrap()
-        .insert(Route::new2(HttpMethod::GET, url), fun);
+        .insert(HttpRoute::new(HttpMethod::GET, url), func);
 }
 
-pub fn add_post_route(url: &'static str, fun: ValType) {
+pub fn add_post_route(url: &'static str, func: ValType) {
     _get_route_instance()
         .write()
         .unwrap()
-        .insert(Route::new2(HttpMethod::POST, url), fun);
+        .insert(HttpRoute::new(HttpMethod::POST, url), func);
+    _get_route_instance()
+        .write()
+        .unwrap()
+        .insert(HttpRoute::new(HttpMethod::OPTIONS, url), |_, _| {});
 }
 
 #[allow(unused)]
@@ -96,13 +80,15 @@ pub fn print_routes() {
     let instance = _get_route_instance();
     let routes = instance.read().unwrap();
     for route in &*routes {
-        println!("{:?}", route.0);
+        trace!("{:?}", route.0);
     }
 }
 
 #[test]
 fn test() {
-    // for r in routes() {
-    //     println!("route={:?}", r.0);
-    // }
+    cm_log::log_init(common::LevelFilter::Debug);
+
+    add_get_route("/", |_req, _rsp| {});
+    add_post_route("/", |_req, _rsp| {});
+    print_routes();
 }

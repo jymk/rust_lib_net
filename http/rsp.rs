@@ -1,5 +1,6 @@
 use super::{header::*, Body};
-use common::errs::SResult;
+#[allow(unused_imports)]
+use common::{errs::SResult, trace};
 
 //////////////////////////////////////////////////////
 /// 版本 空格 状态码 空格 状态说明 回车 换行
@@ -24,16 +25,15 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
-    pub(crate) fn new(head: &str) -> SResult<HttpResponse> {
-        println!("head={}", head);
+    pub(crate) fn new(header: &str) -> SResult<HttpResponse> {
         let mut rsp = HttpResponse::default();
-        let first = rsp._header.parse_head(head);
+        let first = rsp._header.parse_header(header);
         if first.is_err() {
             return Err(first.unwrap_err());
         }
         let first_line = first.unwrap();
         rsp._version = first_line[0].to_string();
-        rsp._status_code = StatusCode::from(first_line[1]);
+        rsp._status_code = StatusCode::from(&first_line[1]);
         rsp._status_text = first_line[2].to_string();
         Ok(rsp)
     }
@@ -222,6 +222,12 @@ impl From<&str> for StatusCode {
     }
 }
 
+impl From<&String> for StatusCode {
+    fn from(s: &String) -> Self {
+        Self::from(s.as_str())
+    }
+}
+
 impl ToString for StatusCode {
     fn to_string(&self) -> String {
         format!("{:?}", self)
@@ -250,7 +256,7 @@ struct RspHeader {
     //响应内容所使用的语言，Content-Language: zh-cn
     contetn_language: String,
     //以8进制表示的请求体的长度，Content-Length: 348
-    content_lenth: usize,
+    content_length: usize,
     //请求体的MIME类型 （用于POST和PUT请求中），Content-Type: application/x-www-form-urlencoded
     content_type: String,
     //指定一个日期/时间，超过该时间则认为此回应已经过期，Expires: Thu, 01 Dec 1994 16:00:00 GMT
@@ -275,5 +281,5 @@ struct RspHeader {
 
 #[test]
 fn test() {
-    println!("{}", StatusCode::InternalServerError.to_string());
+    trace!("{}", StatusCode::InternalServerError.to_string());
 }

@@ -3,7 +3,7 @@ use std::{
     net::TcpStream,
 };
 
-use common::status::LoopStatus;
+use common::{error, status::LoopStatus, trace};
 
 pub(crate) fn read_from_net<'a>(
     ts: &TcpStream,
@@ -15,14 +15,14 @@ pub(crate) fn read_from_net<'a>(
     let rsize = match reader.read_until(b'\n', buf) {
         Ok(len) => len,
         Err(e) => {
-            eprintln!("read err: {:?}", e);
+            error!("read err: {:?}", e);
             return LoopStatus::Break;
         }
     };
     let req = match std::str::from_utf8(&buf[..rsize]) {
         Ok(x) => x,
         Err(e) => {
-            eprintln!("{}", format!("need utf-8 sequence, {:?}", e));
+            error!("{}", format!("need utf-8 sequence, {:?}", e));
             return LoopStatus::Continue;
         }
     };
@@ -35,9 +35,9 @@ pub(crate) fn write_from_cmd(stream: &TcpStream, buf: &mut String) -> usize {
         Ok(len) => len,
         Err(_) => return 0,
     };
-    println!("size:{}", size);
+    trace!("size:{}", size);
     let wsize = write_text(stream, &buf.as_bytes()[..size]);
-    println!("wsize:{}", wsize);
+    trace!("wsize:{}", wsize);
     wsize
 }
 pub(crate) fn write_text(mut stream: &TcpStream, buf: &[u8]) -> usize {
@@ -45,6 +45,6 @@ pub(crate) fn write_text(mut stream: &TcpStream, buf: &[u8]) -> usize {
         Ok(len) => len,
         Err(_) => return 0,
     };
-    println!("wsize:{}", wsize);
+    trace!("wsize:{}", wsize);
     wsize
 }

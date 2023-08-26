@@ -9,20 +9,19 @@ about net
 
 ### HttpServer  
 
-only support single thread and sync now  
 ```rust
-// create server
-HttpServer::default()
-// set address
-.with_addr([url])
-// set function before login
-.with_before([before(&HttpRequest, &mut HttpResponse) -> bool ])
-// set function after login
-.with_after([after(&HttpRequest, &mut HttpResponse) -> bool ])
-// set response header
-.with_header([BTreeMap])
-// start server
-.start();
+// 创建服务
+let mut svr = HttpServer::default();
+// 指定启动地址
+svr.addr = "url";
+// 指定方法前执行（是这个方法签名，但不一定这么写）
+svr.before = before(&HttpRequest, &mut HttpResponse) -> bool{};
+// 指定方法后执行
+svr.after = after(&HttpRequest, &mut HttpResponse) -> bool{};
+// 指定回包header
+svr.heder = BtreeMap;
+// 启动服务
+svr.start();
 ```
 #### Config And Route  
 have to config before server starts  
@@ -31,14 +30,14 @@ route only support get and post method, not support path with param，call lib_n
 
 ## WebsocketServer  
 ```rust
-// create server
-WSServer::default()
-        // set address
-        .with_addr([url])
-        // logic function, send pong when returns None
-        .with_handler([fn(&BytesMut) -> Option<Vec<u8>>])
-        // set timeout
-        .with_timeout([Duration])
-        // start server
-        .start();
+// 创建服务
+let mut svr = WSServer::default();
+// 设置服务地址
+svr.addr = "url";
+// 业务逻辑处理，返回值为None时发送pong
+svr.handler = fn(&BytesMut) -> Option<Vec<u8>>;
+// 指定超时时间
+svr.with_timeout([Duration]);
+// 启动服务
+svr.start();
 ```
