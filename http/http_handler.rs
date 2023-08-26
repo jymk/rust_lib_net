@@ -9,9 +9,12 @@ use crate::{
     http::{header, Header},
     HeaderType,
 };
+
 use common::{error, strings, trace};
 
 use super::rsp::StatusCode;
+
+/// 因为这里要解析网址为ip，所以放弃了
 
 #[allow(unused)]
 pub(crate) fn send(addr: &str, http_txt: &[u8]) {
@@ -158,6 +161,7 @@ fn test() {
     trace!("a={}", a);
     let fa = format!("{:?}", a);
     trace!("a={}", fa);
+
     // let ffa = format!("{:?}", fa);
     // trace!("a={}", ffa);
     // let req = get("www.baidu.com",

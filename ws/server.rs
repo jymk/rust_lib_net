@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     io::{BufReader, Read},
     net::TcpStream,
     time::Duration,
@@ -45,7 +46,6 @@ impl WSServer {
         self
     }
 
-    /// 根据timeout更新expire
     fn _update_expire_with_timeout(&mut self, timeout: Duration) {
         self._expire = common_time::now_drt() + timeout;
     }
