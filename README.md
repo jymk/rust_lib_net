@@ -25,7 +25,7 @@ svr.start();
 ```
 #### 配置及路由  
 需在服务启动前设置  
-路由暂只支持get和post，不支持path中携带参数，可调用lib_net::add_get_route或者lib_net::add_post_route  
+路由暂只支持get和post，可调用lib_net::add_get_route或者lib_net::add_post_route  
 
 
 ## WebsocketServer  
